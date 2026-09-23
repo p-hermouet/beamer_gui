@@ -12,7 +12,13 @@ class PdfSelectButton(QPushButton):
         self.clicked.connect(self.on_clicked)
 
     def on_clicked(self):
-        QFileDialog.getOpenFileName()
+        # QFileDialog.getOpenFileName()
+        if (view := self.window().pdf_view).isVisible():
+            view.setVisible(False)
+            self.window().pdf_view2.setVisible(True)
+        else:
+            view.setVisible(True)
+            self.window().pdf_view2.setVisible(False)
 
 
 
@@ -28,12 +34,20 @@ class MainWindow(QMainWindow):
         self.pdf_view = QPdfView(self, document=self.pdf_doc, pageMode=QPdfView.PageMode.SinglePage, zoomMode=QPdfView.ZoomMode.FitInView)
         self.pdf_view.setDocumentMargins(QMargins())
 
+        pdf_path2 = 'tex/main2.pdf'
+        self.pdf_doc2 = QPdfDocument(self)
+        self.pdf_doc2.load(pdf_path2)
+        self.pdf_view2 = QPdfView(self, document=self.pdf_doc2, pageMode=QPdfView.PageMode.SinglePage, zoomMode=QPdfView.ZoomMode.FitInView)
+        self.pdf_view2.setDocumentMargins(QMargins())
+        self.pdf_view2.setVisible(False)
+
         self.pdf_select = PdfSelectButton()
 
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.pdf_view)
+        layout.addWidget(self.pdf_view2)
         layout.addWidget(self.pdf_select)
         self.setCentralWidget(container)
 
