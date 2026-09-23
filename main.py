@@ -1,24 +1,65 @@
+import logging
+from pathlib import Path
 import sys
+import subprocess
 
 from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog
 from PySide6.QtPdf import QPdfDocument
 from PySide6.QtPdfWidgets import QPdfView
 from PySide6.QtCore import Qt, QMargins
 
+logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 
-class PdfSelectButton(QPushButton):
+
+class TestButton(QPushButton):
     def __init__(self):
-        super().__init__('Load pdf')
+        super().__init__('Test')
         self.clicked.connect(self.on_clicked)
 
     def on_clicked(self):
-        # QFileDialog.getOpenFileName()
-        if (view := self.window().pdf_view).isVisible():
+        if (view := self.window().texpdf.view).isVisible():
             view.setVisible(False)
             self.window().pdf_view2.setVisible(True)
         else:
             view.setVisible(True)
             self.window().pdf_view2.setVisible(False)
+
+
+class TexSelectButton(QPushButton):
+    def __init__(self):
+        super().__init__('Open tex')
+        self.clicked.connect(self.on_clicked)
+
+    def on_clicked(self):
+        path, _ = QFileDialog.getOpenFileName(self, caption='Open tex file', filter='Tex files (*.tex)')
+        self.window().texpdf.tex_path = Path(path)
+
+
+class TexCompileButton(QPushButton):
+    def __init__(self):
+        super().__init__('Compile')
+
+
+class TexPdfButton(QPushButton):
+    def __init__(self):
+        super().__init__('Compile')
+        self.tex_path = Path('')
+        self.pdf_path = Path('')
+        self.doc = QPdfDocument(self)
+        self.view = QPdfView(self, pageMode=QPdfView.PageMode.SinglePage, zoomMode=QPdfView.ZoomMode.FitInView, documentMargins=QMargins())
+        self.clicked.connect(self.on_clicked)
+
+    def on_clicked(self):
+        if self.tex_path.is_file():
+            proc = subprocess.Popen(['pdflatex', '-output-dir=tmp', str(self.tex_path)])
+            proc.wait() # TODO find some way to make it asynchronous
+            logging.info(f'pdflatex returned {proc.returncode}')
+            self.pdf_path = Path(f'tmp/{self.tex_path.stem}.pdf')
+            self.doc.load(str(self.pdf_path))
+            self.view.setDocument(self.doc)
+
+        else:
+            ... # TODO raise some error
 
 
 
@@ -28,11 +69,8 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Beamer GUI')
         self.showMaximized()
 
-        pdf_path = 'tex/main.pdf'
-        self.pdf_doc = QPdfDocument(self)
-        self.pdf_doc.load(pdf_path)
-        self.pdf_view = QPdfView(self, document=self.pdf_doc, pageMode=QPdfView.PageMode.SinglePage, zoomMode=QPdfView.ZoomMode.FitInView)
-        self.pdf_view.setDocumentMargins(QMargins())
+        self.texpdf = TexPdfButton()
+        self.test_btn = TestButton()
 
         pdf_path2 = 'tex/main2.pdf'
         self.pdf_doc2 = QPdfDocument(self)
@@ -41,14 +79,16 @@ class MainWindow(QMainWindow):
         self.pdf_view2.setDocumentMargins(QMargins())
         self.pdf_view2.setVisible(False)
 
-        self.pdf_select = PdfSelectButton()
+        self.tex_select = TexSelectButton()
 
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.pdf_view)
+        layout.addWidget(self.texpdf.view)
         layout.addWidget(self.pdf_view2)
-        layout.addWidget(self.pdf_select)
+        layout.addWidget(self.tex_select)
+        layout.addWidget(self.texpdf)
+        layout.addWidget(self.test_btn)
         self.setCentralWidget(container)
 
     def update_pdf_size(self):
@@ -58,10 +98,6 @@ class MainWindow(QMainWindow):
             print(page.height(), page.width())
             h = page.height() / page.width() * w
             self.pdf_view.setFixedSize(w, h)
-
-    # def resizeEvent(self, event):
-    #     super().resizeEvent(event)
-    #     self.update_pdf_size()
 
 
 def main():
