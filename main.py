@@ -80,16 +80,21 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.texpdf.view)
-        layout.addWidget(self.struc)
+        layout.addWidget(self.struc, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.tex_select)
         layout.addWidget(self.texpdf)
         layout.addWidget(self.test_btn)
         self.setCentralWidget(container)
 
     def resize_struc(self):
-        self.struc.setFixedWidth(self.texpdf.view.width())
-        self.struc.setFixedHeight(self.texpdf.view.height())
-        print(self.texpdf.view.zoomFactor(), self.texpdf.doc.pagePointSize(0).width())
+        if self.texpdf.doc.pageCount() > 0:
+            w_doc, h_doc = self.texpdf.doc.pagePointSize(0).width(), self.texpdf.doc.pagePointSize(0).height()
+            ratio = w_doc / h_doc
+            w_view, h_view = self.texpdf.view.width(), self.texpdf.view.height()
+            if h_view * ratio <= w_view:
+                self.struc.setFixedSize(h_view * ratio, h_view)
+            else:
+                self.struc.setFixedSize(w_view, w_view / ratio)
 
 
 def main():
