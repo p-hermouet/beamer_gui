@@ -2,64 +2,62 @@ import logging
 from pathlib import Path
 import sys
 import subprocess
+import tomllib
 
 from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog
 from PySide6.QtPdf import QPdfDocument
 from PySide6.QtPdfWidgets import QPdfView
-from PySide6.QtCore import Qt, QMargins
+from PySide6.QtCore import Qt, QMargins, Signal
+
+from src.options import SwapButton, TexSelectButton
 
 logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 
 
-class TestButton(QPushButton):
-    def __init__(self):
-        super().__init__('Test')
-        self.clicked.connect(self.on_clicked)
-
-    def on_clicked(self):
-        if (view := self.window().texpdf.view).isVisible():
-            view.setVisible(False)
-            self.window().pdf_view2.setVisible(True)
-        else:
-            view.setVisible(True)
-            self.window().pdf_view2.setVisible(False)
-
-
-class TexSelectButton(QPushButton):
-    def __init__(self):
-        super().__init__('Open tex')
-        self.clicked.connect(self.on_clicked)
-
-    def on_clicked(self):
-        path, _ = QFileDialog.getOpenFileName(self, caption='Open tex file', filter='Tex files (*.tex)')
-        self.window().texpdf.tex_path = Path(path)
-
-
-class TexCompileButton(QPushButton):
-    def __init__(self):
-        super().__init__('Compile')
-
 
 class TexPdfButton(QPushButton):
+    tex_path_changed = Signal(object)
+
     def __init__(self):
         super().__init__('Compile')
-        self.tex_path = Path('')
+        self._tex_path = Path('')
         self.pdf_path = Path('')
         self.doc = QPdfDocument(self)
         self.view = QPdfView(self, pageMode=QPdfView.PageMode.SinglePage, zoomMode=QPdfView.ZoomMode.FitInView, documentMargins=QMargins())
+
         self.clicked.connect(self.on_clicked)
+        self.tex_path_changed.connect(self.on_tex_path_changed)
+
+        if (last_tex := tomllib.loads(Path('config.toml').read_text())['last_tex']) and Path(last_tex).is_file():
+            self.tex_path = Path(last_tex)
+        else:
+            self.tex_path = Path('')
+
+    @property
+    def tex_path(self):
+        return self._tex_path
+
+    @tex_path.setter
+    def tex_path(self, value: str|Path):
+        self._tex_path = value
+        self.tex_path_changed.emit(value)
 
     def on_clicked(self):
         if self.tex_path.is_file():
             proc = subprocess.Popen(['pdflatex', '-output-dir=tmp', str(self.tex_path)])
-            proc.wait() # TODO find some way to make it asynchronous
+            proc.wait()
             logging.info(f'pdflatex returned {proc.returncode}')
             self.pdf_path = Path(f'tmp/{self.tex_path.stem}.pdf')
             self.doc.load(str(self.pdf_path))
             self.view.setDocument(self.doc)
+            self.window().resize_struc()
 
         else:
             ... # TODO raise some error
+
+    def on_tex_path_changed(self, value: str|Path):
+        if Path(value).parts:
+            self.setText(f'Compile {Path(value).parts[-1]}')
 
 
 
@@ -70,14 +68,11 @@ class MainWindow(QMainWindow):
         self.showMaximized()
 
         self.texpdf = TexPdfButton()
-        self.test_btn = TestButton()
+        self.test_btn = SwapButton()
 
-        pdf_path2 = 'tex/main2.pdf'
-        self.pdf_doc2 = QPdfDocument(self)
-        self.pdf_doc2.load(pdf_path2)
-        self.pdf_view2 = QPdfView(self, document=self.pdf_doc2, pageMode=QPdfView.PageMode.SinglePage, zoomMode=QPdfView.ZoomMode.FitInView)
-        self.pdf_view2.setDocumentMargins(QMargins())
-        self.pdf_view2.setVisible(False)
+        self.struc = QWidget()
+        self.struc.setObjectName('struc')
+        self.struc.setVisible(False)
 
         self.tex_select = TexSelectButton()
 
@@ -85,23 +80,21 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.texpdf.view)
-        layout.addWidget(self.pdf_view2)
+        layout.addWidget(self.struc)
         layout.addWidget(self.tex_select)
         layout.addWidget(self.texpdf)
         layout.addWidget(self.test_btn)
         self.setCentralWidget(container)
 
-    def update_pdf_size(self):
-        if hasattr(self, 'pdf_view') and self.pdf_doc.pageCount() > 0:
-            page = self.pdf_doc.pagePointSize(0)
-            w = .7 * self.width()
-            print(page.height(), page.width())
-            h = page.height() / page.width() * w
-            self.pdf_view.setFixedSize(w, h)
+    def resize_struc(self):
+        self.struc.setFixedWidth(self.texpdf.view.width())
+        self.struc.setFixedHeight(self.texpdf.view.height())
+        print(self.texpdf.view.zoomFactor(), self.texpdf.doc.pagePointSize(0).width())
 
 
 def main():
     app = QApplication(sys.argv)
+    app.setStyleSheet('QWidget#struc {border: 2px solid black;}')
     window = MainWindow()
     window.show()
     app.exec()
