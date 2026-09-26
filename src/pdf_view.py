@@ -22,11 +22,6 @@ class PdfView(QPdfView):
         self.pdf_path = Path('')
         self.doc = QPdfDocument(self)
 
-        if Path(cfg['last_tex'] ).is_file():
-            self.tex_path = Path(cfg['last_tex'])
-        else:
-            self.tex_path = Path('')
-
     @property
     def tex_path(self):
         return self._tex_path
@@ -47,5 +42,4 @@ class PdfView(QPdfView):
 
     def display(self):
         self.doc.load(str(self.pdf_path))
-        print(str(self.pdf_path))
         self.setDocument(self.doc)
