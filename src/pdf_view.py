@@ -20,7 +20,7 @@ class PdfView(QPdfView):
 
         self._tex_path = Path('')
         self.pdf_path = Path('')
-        self.doc = QPdfDocument(self)
+        self.doc = QPdfDocument()
 
     @property
     def tex_path(self):

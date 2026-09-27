@@ -9,10 +9,11 @@ from PySide6.QtPdf import QPdfDocument
 from PySide6.QtPdfWidgets import QPdfView
 from PySide6.QtCore import Qt, QMargins, Signal
 
-# from src.options import SwapButton, TexSelectButton
 from src.config import cfg
 from src.menu import Menu
 from src.pdf_view import PdfView
+from src.test import TestButton
+from src.strucs import MainStruc
 
 logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 
@@ -23,11 +24,11 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Beamer GUI')
         self.showMaximized()
 
+        self.test_btn = TestButton()
         self.menu = Menu()
         self.pdf_view = PdfView()
-        self.struc = QWidget()
-        self.struc.setObjectName('struc')
-        self.struc.setVisible(False)
+        self.struc = MainStruc()
+
 
         self.menu.open_tex_btn.tex_opened.connect(self.set_tex_path)
         self.menu.compile_btn.clicked.connect(self.compile_and_display)
@@ -43,6 +44,7 @@ class MainWindow(QMainWindow):
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.test_btn)
         layout.addWidget(self.menu)
         layout.addWidget(self.pdf_view)
         layout.addWidget(self.struc, alignment=Qt.AlignmentFlag.AlignCenter)

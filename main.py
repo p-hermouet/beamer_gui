@@ -16,7 +16,8 @@ logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 
 def main():
     app = QApplication(sys.argv)
-    app.setStyleSheet('QWidget#struc {border: 2px solid black;}')
+    app.setStyleSheet('''QWidget#main_struc {border: 2px solid black;}
+QWidget#title_struc {border: 2px solid black;}''')
     window = MainWindow()
     window.show()
     app.exec()
