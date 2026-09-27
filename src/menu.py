@@ -2,47 +2,28 @@ import logging
 from pathlib import Path
 import subprocess
 
-from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog
-from PySide6.QtPdf import QPdfDocument
-from PySide6.QtPdfWidgets import QPdfView
 from PySide6.QtCore import Qt, QMargins, Signal
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QToolBar
 
 from src.config import cfg
 
 logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 
 
-class Menu(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.open_tex_btn = OpenTexButton()
-        self.compile_btn = CompileButton()
-        self.swap_btn = SwapButton()
-
-        self.setLayout(QVBoxLayout())
-        self.layout().addWidget(self.open_tex_btn)
-        self.layout().addWidget(self.compile_btn)
-        self.layout().addWidget(self.swap_btn)
-
-
-class OpenTexButton(QPushButton):
+class Menu(QToolBar):
     tex_opened = Signal(str)
 
     def __init__(self):
-        super().__init__('Open tex')
+        super().__init__()
+        self.open_tex_action = QAction('Open tex')
+        self.compile_action = QAction('Compile')
+        self.swap_action = QAction('Swap')
 
-        self.clicked.connect(self.on_clicked)
+        self.open_tex_action.triggered.connect(self.on_open_tex_triggered)
 
-    def on_clicked(self):
+        self.addActions([self.open_tex_action, self.compile_action, self.swap_action])
+
+    def on_open_tex_triggered(self):
         path, _ = QFileDialog.getOpenFileName(self, caption='Open tex file', filter='Tex files (*.tex)')
         self.tex_opened.emit(path)
-
-
-class CompileButton(QPushButton):
-    def __init__(self):
-        super().__init__('Compile')
-
-
-class SwapButton(QPushButton):
-    def __init__(self):
-        super().__init__('Swap')

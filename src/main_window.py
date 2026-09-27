@@ -32,10 +32,10 @@ class MainWindow(QMainWindow):
         self.pdf_view = PdfView()
         self.struc = MainStruc()
 
-        self.menu.open_tex_btn.tex_opened.connect(self.set_tex_path)
-        self.menu.compile_btn.clicked.connect(self.compile_and_display)
-        self.menu.compile_btn.clicked.connect(self.resize_struc)
-        self.menu.swap_btn.clicked.connect(self.swap_pdf_struc)
+        self.menu.open_tex_action.triggered.connect(self.set_tex_path)
+        self.menu.compile_action.triggered.connect(self.compile_and_display)
+        self.menu.compile_action.triggered.connect(self.resize_struc)
+        self.menu.swap_action.triggered.connect(self.swap_pdf_struc)
 
         if Path(cfg['last_tex']).is_file():
             self.tex_path = Path(cfg['last_tex'])
@@ -45,8 +45,8 @@ class MainWindow(QMainWindow):
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
+        self.addToolBar(self.menu)
         layout.addWidget(self.test_btn)
-        layout.addWidget(self.menu)
         stack_layout = QStackedLayout(self.stack)
         stack_layout.addWidget(self.pdf_view)
         stack_layout.addWidget(self.struc)
@@ -61,7 +61,7 @@ class MainWindow(QMainWindow):
     def tex_path(self, path: str|Path):
         self._tex_path = path
         if Path(path).parts:
-            self.menu.compile_btn.setText(f'Compile {Path(path).parts[-1]}')
+            self.menu.compile_action.setText(f'Compile {Path(path).parts[-1]}')
 
     def set_tex_path(self, path: str|Path):
         self.tex_path = path
