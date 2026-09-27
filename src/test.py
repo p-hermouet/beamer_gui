@@ -24,7 +24,19 @@ class TestButton(QPushButton):
         self.clicked.connect(self.on_clicked)
 
     def on_clicked(self):
-        pdf_view = self.window().pdf_view
-        pdf_view.doc = QPdfDocument(self)
-        pdf_view.doc.load('tmp/main.pdf')
-        pdf_view.setDocument(pdf_view.doc)
+        win = self.window()
+        win.resources.resource_list.add_resource('static.pp.png')
+
+
+def get_main_window() -> QMainWindow | None:
+    for w in QApplication.topLevelWidgets():
+        if isinstance(w, QMainWindow):
+            return w
+    return None
+
+
+def on_resource_fill_pressed(*args):
+    if (win := get_main_window()):
+        win.resources.resource_list.add_resource('static/snow.jpg')
+    else:
+        print('MainWindow cannot be found')

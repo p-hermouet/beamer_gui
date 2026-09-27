@@ -24,6 +24,12 @@ class Menu(QToolBar):
 
         self.addActions([self.open_tex_action, self.compile_action, self.swap_action])
 
+        # For testing purpose only
+        from src.test import on_resource_fill_pressed
+        self.test_resource_action = QAction('Fill Resources')
+        self.test_resource_action.triggered.connect(on_resource_fill_pressed)
+        self.addAction(self.test_resource_action)
+
     def on_open_tex_triggered(self):
         path, _ = QFileDialog.getOpenFileName(self, caption='Open tex file', filter='Tex files (*.tex)')
         self.tex_opened.emit(path)
