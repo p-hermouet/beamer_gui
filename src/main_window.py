@@ -4,7 +4,7 @@ import sys
 import subprocess
 import tomllib
 
-from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog
+from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QStackedLayout
 from PySide6.QtPdf import QPdfDocument
 from PySide6.QtPdfWidgets import QPdfView
 from PySide6.QtCore import Qt, QMargins, Signal
@@ -26,6 +26,7 @@ class MainWindow(QMainWindow):
 
         self.test_btn = TestButton()
         self.menu = Menu()
+        self.stack = QWidget()
         self.pdf_view = PdfView()
         self.struc = MainStruc()
 
@@ -46,8 +47,10 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.test_btn)
         layout.addWidget(self.menu)
-        layout.addWidget(self.pdf_view)
-        layout.addWidget(self.struc, alignment=Qt.AlignmentFlag.AlignCenter)
+        stack_layout = QStackedLayout(self.stack)
+        stack_layout.addWidget(self.pdf_view)
+        stack_layout.addWidget(self.struc)
+        layout.addWidget(self.stack)
         self.setCentralWidget(container)
 
     def set_tex_path(self, path: str|Path):
@@ -62,19 +65,17 @@ class MainWindow(QMainWindow):
         self.pdf_view.display()
 
     def swap_pdf_struc(self):
-        if self.pdf_view.isVisible():
-            self.pdf_view.setVisible(False)
-            self.struc.setVisible(True)
+        if self.stack.layout().currentIndex() == 0:
+            self.stack.layout().setCurrentIndex(1)
         else:
-            self.pdf_view.setVisible(True)
-            self.struc.setVisible(False)
+            self.stack.layout().setCurrentIndex(0)
 
     def resize_struc(self):
         if self.pdf_view.doc.pageCount() > 0:
             w_doc, h_doc = self.pdf_view.doc.pagePointSize(0).width(), self.pdf_view.doc.pagePointSize(0).height()
             ratio = w_doc / h_doc
-            w_view, h_view = self.pdf_view.width(), self.pdf_view.height()
+            w_view, h_view = self.pdf_view.view.width(), self.pdf_view.view.height()
             if h_view * ratio <= w_view:
-                self.struc.setFixedSize(h_view * ratio, h_view)
+                self.struc.struc.setFixedSize(h_view * ratio, h_view)
             else:
-                self.struc.setFixedSize(w_view, w_view / ratio)
+                self.struc.struc.setFixedSize(w_view, w_view / ratio)

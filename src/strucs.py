@@ -16,12 +16,17 @@ from src.pdf_view import PdfView
 logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 
 
-class MainStruc(QLabel):
+class MainStruc(QWidget):
     def __init__(self):
         super().__init__()
         self.setObjectName('main_struc')
         self.setVisible(False)
-        layout = QVBoxLayout(self)
+        self.struc = QLabel()
+        self.setLayout(QHBoxLayout())
+        self.layout().addWidget(self.struc, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        layout = QVBoxLayout(self.struc)
+        layout.setContentsMargins(QMargins(0, 0, 0, 0))
         layout.addWidget(TitleStruc(), stretch=15)
         layout.addWidget(TitleStruc(), stretch=85)
 

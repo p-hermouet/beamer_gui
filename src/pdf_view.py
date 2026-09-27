@@ -12,15 +12,18 @@ from src.config import cfg
 logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 
 
-class PdfView(QPdfView):
+class PdfView(QWidget):
     tex_path_changed = Signal(object)
 
     def __init__(self):
-        super().__init__(pageMode=QPdfView.PageMode.SinglePage, zoomMode=QPdfView.ZoomMode.FitInView, documentMargins=QMargins())
+        super().__init__()
 
         self._tex_path = Path('')
         self.pdf_path = Path('')
+        self.view = QPdfView(pageMode=QPdfView.PageMode.SinglePage, zoomMode=QPdfView.ZoomMode.FitInView, documentMargins=QMargins())
         self.doc = QPdfDocument()
+        self.setLayout(QHBoxLayout())
+        self.layout().addWidget(self.view)
 
     @property
     def tex_path(self):
@@ -42,4 +45,4 @@ class PdfView(QPdfView):
 
     def display(self):
         self.doc.load(str(self.pdf_path))
-        self.setDocument(self.doc)
+        self.view.setDocument(self.doc)
