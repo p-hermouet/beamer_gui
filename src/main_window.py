@@ -24,23 +24,23 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Beamer GUI')
         self.showMaximized()
 
+        self._tex_path = Path('')
+
         self.test_btn = TestButton()
         self.menu = Menu()
         self.stack = QWidget()
         self.pdf_view = PdfView()
         self.struc = MainStruc()
 
-
         self.menu.open_tex_btn.tex_opened.connect(self.set_tex_path)
         self.menu.compile_btn.clicked.connect(self.compile_and_display)
         self.menu.compile_btn.clicked.connect(self.resize_struc)
         self.menu.swap_btn.clicked.connect(self.swap_pdf_struc)
-        self.pdf_view.tex_path_changed.connect(self.on_tex_path_changed)
 
-        if Path(cfg['last_tex'] ).is_file():
-            self.pdf_view.tex_path = Path(cfg['last_tex'])
+        if Path(cfg['last_tex']).is_file():
+            self.tex_path = Path(cfg['last_tex'])
         else:
-            self.pdf_view.tex_path = Path('')
+            self.tex_path = Path('')
 
         container = QWidget()
         layout = QVBoxLayout(container)
@@ -53,15 +53,21 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.stack)
         self.setCentralWidget(container)
 
-    def set_tex_path(self, path: str|Path):
-        self.pdf_view.tex_path = Path(path)
+    @property
+    def tex_path(self):
+        return self._tex_path
 
-    def on_tex_path_changed(self, path: str|Path):
+    @tex_path.setter
+    def tex_path(self, path: str|Path):
+        self._tex_path = path
         if Path(path).parts:
             self.menu.compile_btn.setText(f'Compile {Path(path).parts[-1]}')
 
+    def set_tex_path(self, path: str|Path):
+        self.tex_path = path
+
     def compile_and_display(self):
-        self.pdf_view.compile_tex()
+        self.pdf_view.compile_tex(self.tex_path)
         self.pdf_view.display()
 
     def swap_pdf_struc(self):

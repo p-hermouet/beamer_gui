@@ -13,32 +13,20 @@ logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 
 
 class PdfView(QWidget):
-    tex_path_changed = Signal(object)
-
     def __init__(self):
         super().__init__()
 
-        self._tex_path = Path('')
         self.pdf_path = Path('')
         self.view = QPdfView(pageMode=QPdfView.PageMode.SinglePage, zoomMode=QPdfView.ZoomMode.FitInView, documentMargins=QMargins())
         self.doc = QPdfDocument()
         self.setLayout(QHBoxLayout())
         self.layout().addWidget(self.view)
 
-    @property
-    def tex_path(self):
-        return self._tex_path
-
-    @tex_path.setter
-    def tex_path(self, value: str|Path):
-        self._tex_path = value
-        self.tex_path_changed.emit(value)
-
-    def compile_tex(self):
-        if self.tex_path.is_file():
-            proc = subprocess.Popen(['pdflatex', '-output-dir=tmp', str(self.tex_path)])
+    def compile_tex(self, path: str|Path):
+        if Path(path).is_file():
+            proc = subprocess.Popen(['pdflatex', '-output-dir=tmp', str(path)])
             proc.wait()
-            self.pdf_path = Path('tmp')/ self.tex_path.with_suffix('.pdf').name
+            self.pdf_path = Path('tmp')/ Path(path).with_suffix('.pdf').name
             logging.info(f'pdflatex returned {proc.returncode}')
         else:
             ... # TODO raise error
