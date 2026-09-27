@@ -12,8 +12,9 @@ from PySide6.QtCore import Qt, QMargins, Signal
 from src.config import cfg
 from src.menu import Menu
 from src.pdf_view import PdfView
-from src.test import TestButton
+from src.resources import Resources
 from src.strucs import MainStruc
+from src.test import TestButton
 
 logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 
@@ -28,6 +29,7 @@ class MainWindow(QMainWindow):
 
         self.test_btn = TestButton()
         self.menu = Menu()
+        self.resources = Resources()
         self.stack = QWidget()
         self.pdf_view = PdfView()
         self.struc = MainStruc()
@@ -43,14 +45,13 @@ class MainWindow(QMainWindow):
             self.tex_path = Path('')
 
         container = QWidget()
-        layout = QVBoxLayout(container)
-        layout.setContentsMargins(0, 0, 0, 0)
         self.addToolBar(self.menu)
-        layout.addWidget(self.test_btn)
+        container.setLayout(QHBoxLayout())
+        container.layout().addWidget(self.resources)
+        container.layout().addWidget(self.stack)
         stack_layout = QStackedLayout(self.stack)
         stack_layout.addWidget(self.pdf_view)
         stack_layout.addWidget(self.struc)
-        layout.addWidget(self.stack)
         self.setCentralWidget(container)
 
     @property
