@@ -6,7 +6,7 @@ import tomllib
 
 from PySide6.QtCore import Qt, QMargins, Signal
 from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QStackedLayout
+from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QStackedLayout, QScrollArea
 
 from src.config import cfg
 
@@ -30,26 +30,34 @@ class Resources(QWidget):
         path, _ = QFileDialog.getOpenFileName(self, caption='Open resource file', filter='Image files (*.png *.jpg *.jpeg)')
         self.resource_list.add_resource(path)
 
-class ResourceList(QWidget):
+
+class ResourceList(QScrollArea):
     def __init__(self):
         super().__init__()
-        self.resource_paths: list[str|Path] = []
-
-        self.setLayout(QVBoxLayout(alignment=Qt.AlignmentFlag.AlignCenter))
-        self.layout().setContentsMargins(QMargins(0, 0, 0, 0))
+        self.content = ResourceListContent()
+        self.setWidget(self.content)
+        self.setWidgetResizable(True)
 
     def add_resource(self, resource_path: str|Path):
-        self.resource_paths.append(resource_path)
+        self.content.resource_paths.append(resource_path)
         im  = QLabel()
         im.setPixmap(QPixmap(resource_path))
         ratio = im.pixmap().width() / im.pixmap().height()
         w, h = .22 * self.height() * ratio, .22 * self.height()
         if w > self.width():
             w, h = self.width(), self.width() / ratio
-        im.setFixedSize(w, h)
+        im.setFixedSize(.9 * w, .9 * h) # .9 factor to prevent pictures to be cropped when scroll bar appears
         im.setScaledContents(True)
-        self.layout().addWidget(im)
+        self.content.layout().addWidget(im)
 
     def rm_resource(self, resource: str|Path|int):
         ... # TODO (resource) can be path or position
+
+
+class ResourceListContent(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.resource_paths: list[str|Path] = []
+
+        self.setLayout(QVBoxLayout(alignment=Qt.AlignmentFlag.AlignCenter))
 
