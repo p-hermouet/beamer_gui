@@ -5,8 +5,8 @@ import subprocess
 import tomllib
 
 from PySide6.QtCore import Qt, QMargins, Signal
-from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QStackedLayout, QScrollArea
+from PySide6.QtGui import QPixmap, QColor
+from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QStackedLayout, QScrollArea, QFrame, QSizePolicy
 
 from src.config import cfg
 
@@ -39,15 +39,8 @@ class ResourceList(QScrollArea):
         self.setWidgetResizable(True)
 
     def add_resource(self, resource_path: str|Path):
-        self.content.resource_paths.append(resource_path)
-        im  = QLabel()
-        im.setPixmap(QPixmap(resource_path))
-        ratio = im.pixmap().width() / im.pixmap().height()
-        w, h = .22 * self.height() * ratio, .22 * self.height()
-        if w > self.width():
-            w, h = self.width(), self.width() / ratio
-        im.setFixedSize(.9 * w, .9 * h) # .9 factor to prevent pictures to be cropped when scroll bar appears
-        im.setScaledContents(True)
+        # TODO i want the resources not to move when the scroll bar appears
+        im = QResourceThumbnail(resource_path, self)
         self.content.layout().addWidget(im)
 
     def rm_resource(self, resource: str|Path|int):
@@ -57,7 +50,35 @@ class ResourceList(QScrollArea):
 class ResourceListContent(QWidget):
     def __init__(self):
         super().__init__()
-        self.resource_paths: list[str|Path] = []
+        self.setLayout(QVBoxLayout(alignment=Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignTop))
 
-        self.setLayout(QVBoxLayout(alignment=Qt.AlignmentFlag.AlignCenter))
+
+class QResourceThumbnail(QFrame):
+    def __init__(self, path: str|Path, scroll_area: QScrollArea):
+        super().__init__()
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+        self.setLayout(QHBoxLayout(alignment=Qt.AlignmentFlag.AlignCenter))
+        self.setContentsMargins(QMargins(0, 0, 0, 0))
+        self.im = QResourceThumbnailLabel(path, scroll_area, self)
+        self.layout().addWidget(self.im)
+
+
+class QResourceThumbnailLabel(QLabel):
+    def __init__(self, path: str|Path, scroll_area: QScrollArea, frame: QFrame):
+        # TODO resize should update each time the window is resized
+        # TODO fix bug that moves thin images to the left after opening a wide image
+        super().__init__()
+        self.path = path
+        self.frame = frame
+        pixmap = QPixmap(path).scaled(.9 * scroll_area.width(), .22 * scroll_area.height(), Qt.AspectRatioMode.KeepAspectRatio) # .9 factor to prevent pictures to be cropped when scroll bar appears
+        self.setPixmap(pixmap)
+
+    def enterEvent(self, e):
+        super().enterEvent(e)
+        self.frame.setStyleSheet(f'QFrame {{background-color: {QColor(227, 227, 125).name()}}};')
+
+    def leaveEvent(self, e):
+        super().leaveEvent(e)
+        self.frame.setStyleSheet('')
+
 
