@@ -43,7 +43,8 @@ class ResourceList(QScrollArea):
     def add_resource(self, resource_path: str|Path):
         # TODO i want the resources not to move when the scroll bar appears
         im = ResourceThumbnail(resource_path, self)
-        self.content.layout().addWidget(im)
+        if not im.im.pixmap().isNull():
+            self.content.layout().addWidget(im)
 
     def rm_resource(self, resource: str|Path|int):
         ... # TODO (resource) can be path or position

@@ -22,6 +22,10 @@ class PdfView(QWidget):
         self.setLayout(QHBoxLayout())
         self.layout().addWidget(self.view)
 
+    @property
+    def doc_size(self):
+        return self.doc.pagePointSize(0).width(), self.doc.pagePointSize(0).height()
+
     def compile_tex(self, path: str|Path):
         if Path(path).is_file():
             proc = subprocess.Popen(['pdflatex', '-output-dir=tmp', str(path)])

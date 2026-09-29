@@ -4,10 +4,11 @@ import sys
 import subprocess
 import tomllib
 
-from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QStackedLayout
+from PySide6.QtCore import Qt, QMargins, Signal
+from PySide6.QtGui import QPixmap
 from PySide6.QtPdf import QPdfDocument
 from PySide6.QtPdfWidgets import QPdfView
-from PySide6.QtCore import Qt, QMargins, Signal
+from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QStackedLayout
 
 from src.config import cfg
 from src.menu import Menu
@@ -80,7 +81,7 @@ class MainWindow(QMainWindow):
 
     def resize_struc(self):
         if self.pdf_view.doc.pageCount() > 0:
-            w_doc, h_doc = self.pdf_view.doc.pagePointSize(0).width(), self.pdf_view.doc.pagePointSize(0).height()
+            w_doc, h_doc = self.pdf_view.doc_size
             ratio = w_doc / h_doc
             w_view, h_view = self.pdf_view.view.width(), self.pdf_view.view.height()
             if h_view * ratio <= w_view:
@@ -88,5 +89,12 @@ class MainWindow(QMainWindow):
             else:
                 self.struc.struc.setFixedSize(w_view, w_view / ratio)
 
-    def add_resource_to_pdf(self, path: str|Path): ...
-        # TODO
+    def add_resource_to_pdf(self, path: str|Path):
+        if (doc := self.pdf_view.view.document()) and doc.status() == QPdfDocument.Status.Ready:
+            im = QLabel(self)
+            w, h = self.pdf_view.size().width(), self.pdf_view.size().height()
+            pixmap = QPixmap(path).scaled(w/10, h/10, Qt.AspectRatioMode.KeepAspectRatio)
+            im.setPixmap(pixmap)
+            im.setGeometry(1000, 200, pixmap.width(), pixmap.height())
+            im.show()
+
