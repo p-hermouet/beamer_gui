@@ -12,7 +12,7 @@ from PySide6.QtCore import Qt, QMargins, Signal
 from src.config import cfg
 from src.menu import Menu
 from src.pdf_view import PdfView
-from src.resources import Resources
+from src.resources import Resources, ResourceThumbnail
 from src.strucs import MainStruc
 from src.test import TestButton
 
@@ -38,6 +38,7 @@ class MainWindow(QMainWindow):
         self.menu.compile_action.triggered.connect(self.compile_and_display)
         self.menu.compile_action.triggered.connect(self.resize_struc)
         self.menu.swap_action.triggered.connect(self.swap_pdf_struc)
+        self.resources.resource_list.double_clicked.connect(self.add_resource_to_pdf)
 
         if Path(cfg['last_tex']).is_file():
             self.tex_path = Path(cfg['last_tex'])
@@ -86,3 +87,6 @@ class MainWindow(QMainWindow):
                 self.struc.struc.setFixedSize(h_view * ratio, h_view)
             else:
                 self.struc.struc.setFixedSize(w_view, w_view / ratio)
+
+    def add_resource_to_pdf(self, path: str|Path): ...
+        # TODO
