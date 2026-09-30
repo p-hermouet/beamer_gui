@@ -4,8 +4,9 @@ import sys
 import subprocess
 import tomllib
 
-from PySide6.QtCore import Qt, QMargins, Signal
-from PySide6.QtGui import QPixmap, QColor
+from PySide6.QtCore import Qt, QMargins, Signal, QMimeData
+from PySide6.QtGui import QPixmap, QColor, QDrag
+from PySide6.QtPdfWidgets import QPdfView
 from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QStackedLayout, QScrollArea, QFrame, QSizePolicy
 
 from src.config import cfg
@@ -87,7 +88,39 @@ class ResourceThumbnailLabel(QLabel):
         # TODO resize should update each time the window is resized
         # TODO fix bug that moves thin images to the left after opening a wide image
         super().__init__()
-        pixmap = QPixmap(path).scaled(.9 * scroll_area.width(), .22 * scroll_area.height(), Qt.AspectRatioMode.KeepAspectRatio) # .9 factor to prevent pictures to be cropped when scroll bar appears
+        pixmap = QPixmap(path)
+        if not pixmap.isNull():
+            pixmap = pixmap.scaled(.9 * scroll_area.width(), .22 * scroll_area.height(), Qt.AspectRatioMode.KeepAspectRatio) # .9 factor to prevent pictures to be cropped when scroll bar appears
         self.setPixmap(pixmap)
 
 
+class FloatingResource(QLabel):
+    def __init__(self, path:str|Path, pdf_view: QPdfView):
+        super().__init__(pdf_view)
+        self.setStyleSheet('QLabel {border: 2px solid blue;}')
+
+        self.path = path
+        self.offset = 0., 0.
+
+        w, h = pdf_view.size().width(), pdf_view.size().height()
+        pixmap = QPixmap(path).scaled(w/10, h/10, Qt.AspectRatioMode.KeepAspectRatio)
+        self.setPixmap(pixmap)
+
+        x = (pdf_view.x() + pdf_view.width()) / 2
+        y = (pdf_view.y() + pdf_view.height()) / 2
+        self.setGeometry(x, y, pixmap.width(), pixmap.height())
+
+        self.show()
+
+    def mouseMoveEvent(self, ev):
+        super().mouseMoveEvent(ev)
+        if ev.buttons() == Qt.MouseButton.LeftButton:
+            drag = QDrag(self)
+            pixmap = QPixmap(self.size())
+            self.render(pixmap)
+            drag.setMimeData(QMimeData())
+            drag.setPixmap(pixmap)
+            offset = drag.hotSpot()
+            drag.setHotSpot(ev.pos())
+            self.offset = ev.pos() - offset
+            drag.exec(Qt.DropAction.MoveAction)

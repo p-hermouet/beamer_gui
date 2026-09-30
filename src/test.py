@@ -37,6 +37,6 @@ def get_main_window() -> QMainWindow | None:
 
 def on_resource_fill_pressed(*args):
     if (win := get_main_window()):
-        win.resources.resource_list.add_resource('static/pp.png')
+        win.resources.resource_list.add_resource('static/lwe.png')
     else:
         print('MainWindow cannot be found')

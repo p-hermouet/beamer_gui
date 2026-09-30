@@ -6,9 +6,9 @@ import tomllib
 
 from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QMenu, QStatusBar, QToolBar, QStackedLayout, QScrollArea
 from PySide6.QtPdf import QPdfDocument
-from PySide6.QtGui import QAction, QPixmap
+from PySide6.QtGui import QAction, QPixmap, QDrag
 from PySide6.QtPdfWidgets import QPdfView
-from PySide6.QtCore import Qt, QMargins, Signal
+from PySide6.QtCore import Qt, QMargins, Signal, QMimeData
 
 from src.config import cfg
 from src.menu import Menu
@@ -22,6 +22,28 @@ logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 class TestCentralWidget(QWidget):
     def __init__(self):
         super().__init__()
+
+    def dragEnterEvent(self, e):
+        e.accept()
+
+    def dropEvent(self, e):
+        print('bbbb')
+        pos = e.position()
+        widget = e.source()
+        widget.move(pos.x(), pos.y())
+        e.accept()
+
+
+class DragButton(QPushButton):
+    def mouseMoveEvent(self, e):
+        if e.buttons() == Qt.MouseButton.LeftButton:
+            drag = QDrag(self)
+            mime = QMimeData()
+            drag.setMimeData(mime)
+            pixmap = QPixmap(self.size())
+            self.render(pixmap)
+            drag.setPixmap(pixmap)
+            drag.exec(Qt.DropAction.MoveAction)
 
 
 class TestMainWindow(QMainWindow):
@@ -43,11 +65,9 @@ class TestMainWindow(QMainWindow):
         self.setCentralWidget(self.central)
 
     def test(self):
-        self.im = QLabel(self)
-        pixmap = QPixmap('static/pp.png')
-        self.im.setPixmap(pixmap)
-        self.im.setGeometry(pixmap.width(), pixmap.height(), 1000, 400)
-        self.im.show()
+        btn = DragButton('test', parent=self)
+        btn.setGeometry(100, 100, btn.width(), btn.height())
+        btn.show()
 
     def mv(self):
         self.im.move(self.im.x() + 50, self.im.y())
