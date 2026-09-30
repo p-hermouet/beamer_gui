@@ -59,4 +59,10 @@ class PdfView(QWidget):
         y = wid.y() * ratio # TODO: the position is not correct (almost); fix it
         width = wid.width() * ratio
         self.float_resource_dropped.emit(x, y, width, wid.path)
+
+        # test purposes
+        pt = QLabel(self)
+        pt.setGeometry(wid.x(), wid.y(), 10, 10)
+        pt.setStyleSheet('* {background-color: red;}')
+        pt.show()
         event.accept()
