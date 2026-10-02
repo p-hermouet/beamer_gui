@@ -1,3 +1,4 @@
+from enum import Enum, auto, unique
 import logging
 from pathlib import Path
 import sys
@@ -5,7 +6,7 @@ import subprocess
 import tomllib
 
 from PySide6.QtCore import Qt, QMargins, Signal, QMimeData, QPoint, QRect
-from PySide6.QtGui import QAction, QPixmap, QDrag, QPainter, QBrush, QColor, QPen
+from PySide6.QtGui import QAction, QPixmap, QDrag, QPainter, QBrush, QColor, QPen, QVector2D
 from PySide6.QtPdf import QPdfDocument
 from PySide6.QtPdfWidgets import QPdfView
 from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QMenu, QStatusBar, QToolBar, QStackedLayout, QScrollArea
@@ -17,75 +18,145 @@ BUILDING_SQUARE = 2
 BEGIN_SIDE_EDIT = 3
 END_SIDE_EDIT = 4
 
-CURSOR_ON_BEGIN_SIDE = 1
-CURSOR_ON_END_SIDE = 2
+DRAG_CORNER_DISTANCE = 5
 
+@unique
+class Corners(Enum):
+    TL = auto()
+    TR = auto()
+    BL = auto()
+    BR = auto()
+
+@unique
+class CursorState(Enum):
+    IDLE = auto()
+    HOVER_TL = auto()
+    HOVER_TR = auto()
+    HOVER_BL = auto()
+    HOVER_BR = auto()
+    RESIZING_TL = auto()
+    RESIZING_TR = auto()
+    RESIZING_BL = auto()
+    RESIZING_BR = auto()
+
+    @classmethod
+    def resize_from_corner(cls, corner: Corners):
+        match corner:
+            case Corners.TL: return cls.RESIZING_TL
+            case Corners.TR: return cls.RESIZING_TR
+            case Corners.BL: return cls.RESIZING_BL
+            case Corners.BR: return cls.RESIZING_BR
+
+    @classmethod
+    def hover_from_corner(cls, corner: Corners):
+        match corner:
+            case Corners.TL: return cls.HOVER_TL
+            case Corners.TR: return cls.HOVER_TR
+            case Corners.BL: return cls.HOVER_BL
+            case Corners.BR: return cls.HOVER_BR
+
+    @classmethod
+    def hovers(cls):
+        return [cls.HOVER_TL, cls.HOVER_TR, cls.HOVER_BL, cls.HOVER_BR]
 
 class BlueDot(QLabel):
-    def __init__(self, parent, pos: QPoint):
+    def __init__(self, parent, pos: QPoint, color='blue'):
         super().__init__(parent)
-        self.setStyleSheet('QLabel {background-color: blue;}')
-        self.setGeometry(*pos.toTuple(), 20, 20)
+        self.setStyleSheet(f'QLabel {{background-color: {color};}}')
+        self.setGeometry(*pos.toTuple(), 5, 5)
         self.show()
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.setGeometry(0, 0, 800, 600)
         self.central_wid = CentralWidget()
+        self.menu = QToolBar()
+        action = QAction('test', parent=self)
+        action.triggered.connect(self.central_wid.dots)
+        self.menu.addAction(action)
+        self.addToolBar(self.menu)
         self.setCentralWidget(self.central_wid)
 
 
 class CentralWidget(QWidget):
     def __init__(self):
         super().__init__()
-        self.img = ResizableImgFrame(self)
-
-
-class ResizableImgFrame(QWidget):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.setStyleSheet('QWidget {border: 2px solid black;}')
-        self.setLayout(QHBoxLayout(alignment=Qt.AlignmentFlag.AlignCenter))
-        self.layout().setSpacing(10)
-        self.img = ResizableImg()
-        self.layout().addWidget(self.img)
+        self.img = ResizableImg(self)
         self.setMouseTracking(True)
-        self.move(700, 500)
-        self.show()
 
-    def cursor_on_side(self, pos):
-        """Return which side the cursor is near, or 0 if not near either."""
-        print(pos)
-        y1, y2 = sorted([self.tl.y(), self.br.y()])
-        if y1 <= pos.y() <= y2:
-            if abs(self.tl.x() - pos.x()) <= 5:
-                return CURSOR_ON_BEGIN_SIDE
-            elif abs(self.br.x() - pos.x()) <= 5:
-                return CURSOR_ON_END_SIDE
-        return 0
+    def dots(self):
+        BlueDot(self, self.img.tl)
+        BlueDot(self, self.img.br)
+        BlueDot(self, self.img.tr)
+        BlueDot(self, self.img.bl)
 
-    def resizeEvent(self, event):
-        self.tl = self.pos()
-        self.br = QPoint(self.x() + self.width(), self.y() + self.height())
-        print(self.tl, self.br)
-        BlueDot(self.window(), self.tl)
-        BlueDot(self.window(), QPoint(self.br.x() - 20, self.br.y() - 20))
+    def mouseMoveEvent(self, ev):
+        if self.img.state == CursorState.IDLE or self.img.state in CursorState.hovers():
+            if C := self.img.cursor_on_corner(ev.position()):
+                self.img.state = CursorState.hover_from_corner(C)
+                if C in [Corners.TL, Corners.BR]:
+                    self.setCursor(Qt.CursorShape.SizeFDiagCursor)
+                else:
+                    self.setCursor(Qt.CursorShape.SizeBDiagCursor)
+            else:
+                self.img.state = CursorState.IDLE
+                self.unsetCursor()
+        elif self.img.state == CursorState.RESIZING_TL:
+            curs_vec = QVector2D(ev.position()) - self.img.tl
+            direc = QVector2D(self.img.ratio, 1).normalized()
+            coef = QVector2D.dotProduct(curs_vec, direc)
+            BlueDot(self, coef * direc + self.img.tl)
+
+    def mousePressEvent(self, event):
+        match self.img.state:
+            case CursorState.HOVER_TL:
+                self.img.state = CursorState.RESIZING_TL
+                shadow = QLabel(self    )
+            case _: return
+
+    def mouseReleaseEvent(self, event):
+        self.img.state = CursorState.IDLE
 
 
 class ResizableImg(QLabel):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent):
+        super().__init__(parent)
         self.setStyleSheet('QLabel {border: 2px solid red;}')
 
-        self.original_pixmap = QPixmap('static/snow.jpg')
+        pixmap = QPixmap('static/lwe.png')
+        self.ratio = pixmap.width() / pixmap.height()
         self.hover_side = 0
-        self.state = FREE_STATE
+        self.state = CursorState.IDLE
 
-        self.setPixmap(self.original_pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio))
-        self.tl = self.pos()
-        self.br = QPoint(self.x() + self.width(), self.y() + self.height())
+        self.setPixmap(pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio))
 
+        self.move(300, 200)
+        self.show()
+
+    @property
+    def tl(self): return QVector2D(self.pos())
+    @property
+    def br(self): return QVector2D(self.x() + self.width(), self.y() + self.height())
+    @property
+    def tr(self): return QVector2D(self.br.x(), self.tl.y())
+    @property
+    def bl(self): return QVector2D(self.tl.x(), self.br.y())
+
+    def cursor_on_corner(self, pos) -> Corners:
+        '''Return which corner the cursor is near, or 0 if not near either.'''
+        for c, C in [(self.tl, Corners.TL), (self.tr, Corners.TR), (self.bl, Corners.BL), (self.br, Corners.BR)]:
+            if (pos.x() - c.x())**2 + (pos.y() - c.y())**2 <= DRAG_CORNER_DISTANCE**2:
+                return C
+        return
+
+    # def resizeEvent(self, event):
+    #     self.tl = self.pos()
+    #     self.br = QPoint(self.x() + self.width(), self.y() + self.height())
+    #     print(self.tl, self.br)
+    #     BlueDot(self.window(), self.tl)
+    #     BlueDot(self.window(), QPoint(self.br.x() - 20, self.br.y() - 20))
 
 if __name__ == "__main__":
     app = QApplication([])
