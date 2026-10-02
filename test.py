@@ -9,7 +9,7 @@ from PySide6.QtCore import Qt, QMargins, Signal, QMimeData, QPoint, QRect
 from PySide6.QtGui import QAction, QPixmap, QDrag, QPainter, QBrush, QColor, QPen, QVector2D
 from PySide6.QtPdf import QPdfDocument
 from PySide6.QtPdfWidgets import QPdfView
-from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QMenu, QStatusBar, QToolBar, QStackedLayout, QScrollArea
+from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QMenu, QStatusBar, QToolBar, QStackedLayout, QScrollArea, QSizePolicy
 
 logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 
@@ -87,10 +87,8 @@ class CentralWidget(QWidget):
         self.setMouseTracking(True)
 
     def dots(self):
-        BlueDot(self, self.img.tl)
-        BlueDot(self, self.img.br)
-        BlueDot(self, self.img.tr)
-        BlueDot(self, self.img.bl)
+        BlueDot(self, self.img.shadow.pos(), 'green')
+        print(self.img.shadow.size(), self.img.size())
 
     def mouseMoveEvent(self, ev):
         if self.img.state == CursorState.IDLE or self.img.state in CursorState.hovers():
@@ -107,13 +105,18 @@ class CentralWidget(QWidget):
             curs_vec = QVector2D(ev.position()) - self.img.tl
             direc = QVector2D(self.img.ratio, 1).normalized()
             coef = QVector2D.dotProduct(curs_vec, direc)
-            BlueDot(self, coef * direc + self.img.tl)
+            new_tl = coef * direc + self.img.tl
+            new_w = abs(new_tl.x() - self.img.tr.x()) + self.img.w
+            new_h = abs(new_tl.y() - self.img.bl.y()) + self.img.h
+            self.img.shadow.setGeometry(*new_tl.toTuple(), new_w, new_h)
+            self.img.shadow.setPixmap(self.img.og_pixmap.scaled(new_w, new_h, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+            self.img.shadow.adjustSize()
 
     def mousePressEvent(self, event):
         match self.img.state:
             case CursorState.HOVER_TL:
                 self.img.state = CursorState.RESIZING_TL
-                shadow = QLabel(self    )
+                self.img.init_resized_shadow()
             case _: return
 
     def mouseReleaseEvent(self, event):
@@ -123,14 +126,18 @@ class CentralWidget(QWidget):
 class ResizableImg(QLabel):
     def __init__(self, parent):
         super().__init__(parent)
-        self.setStyleSheet('QLabel {border: 2px solid red;}')
+        self.setStyleSheet('QLabel {border: 1px solid red;}')
 
-        pixmap = QPixmap('static/lwe.png')
-        self.ratio = pixmap.width() / pixmap.height()
+        self.og_pixmap = QPixmap('static/lwe.png')
+        self.w, self.h = self.width(), self.height()
+        self.ratio = self.og_pixmap.width() / self.og_pixmap.height()
         self.hover_side = 0
         self.state = CursorState.IDLE
+        self.shadow = QLabel(parent)
+        self.shadow.show()
+        self.shadow.setVisible(False)
 
-        self.setPixmap(pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio))
+        self.setPixmap(self.og_pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio))
 
         self.move(300, 200)
         self.show()
@@ -151,86 +158,14 @@ class ResizableImg(QLabel):
                 return C
         return
 
-    # def resizeEvent(self, event):
-    #     self.tl = self.pos()
-    #     self.br = QPoint(self.x() + self.width(), self.y() + self.height())
-    #     print(self.tl, self.br)
-    #     BlueDot(self.window(), self.tl)
-    #     BlueDot(self.window(), QPoint(self.br.x() - 20, self.br.y() - 20))
+    def init_resized_shadow(self):
+        self.shadow.setPixmap(QPixmap(self.pixmap()))
+        self.shadow.setStyleSheet('QLabel {border: 1px solid red;}')
+        self.shadow.move(self.pos())
+        self.setVisible(False)
 
 if __name__ == "__main__":
     app = QApplication([])
     window = MainWindow()
     window.showMaximized()
     app.exec()
-
-
-
-class MyWidget(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setGeometry(0, 0, 1600, 1200)
-        self.img = QLabel(self)
-        self.pixmap = QPixmap('static/lwe.png')
-        self.img.setStyleSheet('QLabel {border: 2px solid red;}')
-        self.img.setPixmap(self.pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio))
-        self.img.move(700, 500)
-        self.img.show()
-        self.begin = self.img.pos()
-        self.end = QPoint(self.img.x() + self.img.width(), self.img.y() + self.img.height())
-        self.state = FREE_STATE
-
-        self.setMouseTracking(True)
-        self.hover_side = 0
-
-    def cursor_on_side(self, pos):
-        """Return which side the cursor is near, or 0 if not near either."""
-        y1, y2 = sorted([self.begin.y(), self.end.y()])
-        if y1 <= pos.y() <= y2:
-            if abs(self.begin.x() - pos.x()) <= 5:
-                return CURSOR_ON_BEGIN_SIDE
-            elif abs(self.end.x() - pos.x()) <= 5:
-                return CURSOR_ON_END_SIDE
-        return 0
-
-    def mousePressEvent(self, event):
-        side = self.cursor_on_side(event.position().toPoint())
-        if side == CURSOR_ON_BEGIN_SIDE:
-            self.state = BEGIN_SIDE_EDIT
-        elif side == CURSOR_ON_END_SIDE:
-            self.state = END_SIDE_EDIT
-
-    def mouseMoveEvent(self, event):
-        if self.state == FREE_STATE:
-            self.hover_side = self.cursor_on_side(event.position().toPoint())
-            if self.hover_side:
-                self.setCursor(Qt.CursorShape.SizeHorCursor)
-            else:
-                self.unsetCursor()
-        else:
-            ...
-            # self.apply_event(event)
-
-    def mouseReleaseEvent(self, event):
-        self.apply_event(event)
-        self.state = FREE_STATE
-
-    def apply_event(self, event):
-        if self.state == BEGIN_SIDE_EDIT:
-            if self.img.pixmap().height():
-                ratio = self.pixmap.width() / self.pixmap.height()
-                new_width = self.img.pixmap().width() + (self.begin.x() - event.position().x())
-                self.img.setPixmap(self.pixmap.scaled(new_width, new_width / ratio))
-                self.img.resize(self.img.pixmap().size())
-                self.img.move(event.position().x(), self.begin.y() + (event.position().x() - self.begin.x()) / ratio)
-                self.begin = self.img.pos()
-                self.end = QPoint(self.img.x() + self.img.width(), self.img.y() + self.img.height())
-        elif self.state == END_SIDE_EDIT:
-            self.end.setX(event.x())
-
-
-# if __name__ == "__main__":
-#     app = QApplication(sys.argv)
-#     window = MyWidget()
-#     window.show()
-#     sys.exit(app.exec())
