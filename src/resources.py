@@ -48,7 +48,7 @@ class ResourceList(QScrollArea):
             self.content.layout().addWidget(im)
 
     def rm_resource(self, resource: str|Path|int):
-        ... # TODO (resource) can be path or position
+        ... # TODO (resource) can be path or index
 
 
 class ResourceListContent(QWidget):
@@ -94,6 +94,7 @@ class ResourceThumbnailLabel(QLabel):
         self.setPixmap(pixmap)
 
 
+# TODO: to remove: no longer used
 class FloatingResource(QLabel):
     def __init__(self, path:str|Path, pdf_view: QPdfView):
         super().__init__(pdf_view)

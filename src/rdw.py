@@ -150,7 +150,9 @@ class Shadow(QLabel):
             c.rdw.shadow.adjustSize()
 
     def move_when_dragged(self, shift: QVector2D):
-        self.rdw.shadow.move((QVector2D(self.rdw.pos()) + shift - self.rdw.inside.drag_anchor).toPoint())
+        new_pos = QVector2D(self.rdw.pos()) + shift - self.rdw.inside.drag_anchor
+        if 0 <= new_pos.x() <= self.area.size().width() - Corner.radius and 0 <= new_pos.y() <= self.area.size().height() - Corner.radius:
+            self.rdw.shadow.move(new_pos.toPoint())
 
 
 class ResizableDragableWidget(QLabel):
@@ -160,9 +162,10 @@ class ResizableDragableWidget(QLabel):
     moving_done = Signal(QLabel)
 
 
-    def __init__(self, area: DrawingArea, path: str|Path, size, pos):
+    def __init__(self, area: DrawingArea, path: str|Path, size: tuple[int, int], pos: tuple[int, int]):
         super().__init__(parent=area)
         self.area = area
+        self.setStyleSheet('QLabel {border: 2px solid red;}')
 
         self.px = QPixmap(path)
         self.setPixmap(self.px.scaled(*size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
@@ -205,78 +208,3 @@ class ResizableDragableWidget(QLabel):
 
     def moveEvent(self, event):
         self.adapt_components()
-
-
-class DrawingArea(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.state: Literal['idle', 'hovering_corner', 'resizing', 'hovering_inside', 'moving'] = 'idle'
-
-        self.rdws = [ResizableDragableWidget(self, 'static/lwe', (200, 200), (300, 200)),
-                     ResizableDragableWidget(self, 'static/lwe.png', (200, 200), (100, 200))]
-
-        for rdw in self.rdws:
-            rdw.resizing.connect(self.resize_shadow)
-            rdw.resizing_done.connect(self.resize_rdw)
-            rdw.moving.connect(self.move_shadow)
-            rdw.moving_done.connect(self.move_rdw)
-
-    def resize_shadow(self, rdw: ResizableDragableWidget, c: Corner, shift: QVector2D):
-        rdw.shadow.resize_when_dragged(c, shift)
-
-    def resize_rdw(self, rdw: ResizableDragableWidget):
-        rdw.resize_to_shadow()
-
-    def move_shadow(self, rdw: ResizableDragableWidget, shift: QVector2D):
-        rdw.shadow.move_when_dragged(shift)
-
-    def move_rdw(self, rdw: ResizableDragableWidget):
-        rdw.move_to_shadow()
-
-
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setGeometry(0, 0, 800, 600)
-        self.ss = '* {border: 2px solid red;}'
-        self.ss_on = True
-        self.setStyleSheet(self.ss)
-
-        self.menu = QToolBar()
-        self.action1 = QAction('Stylesheet: on/off')
-        self.action1.triggered.connect(self.ss_on_off)
-        self.action2 = QAction('Move RDW')
-        self.action2.triggered.connect(self.move_rdw)
-        self.action3 = QAction('Scale RDW')
-        self.action3.triggered.connect(self.scale_rdw)
-        self.menu.addActions([self.action1, self.action2, self.action3])
-        self.addToolBar(self.menu)
-
-        self.central_wid = QWidget()
-        self.central_wid.setLayout(QHBoxLayout())
-        self.rdw = DrawingArea()
-        self.central_wid.layout().addWidget(self.rdw, stretch=1)
-        self.setCentralWidget(self.central_wid)
-
-    def ss_on_off(self):
-        if self.ss_on:
-            self.setStyleSheet('')
-            self.ss_on = False
-        else:
-            self.setStyleSheet(self.ss)
-            self.ss_on = True
-
-    def move_rdw(self):
-        self.rdw.img.move((QVector2D(self.rdw.pos()) + QVector2D(50, 50)).toPoint())
-
-    def scale_rdw(self):
-        px = self.rdw.img.pixmap()
-        self.rdw.img.setPixmap(px.scaled(2 * px.width(), 2 * px.height()))
-        self.rdw.img.adjustSize()
-
-
-if __name__ == "__main__":
-    app = QApplication([])
-    window = MainWindow()
-    window.showMaximized()
-    app.exec()
