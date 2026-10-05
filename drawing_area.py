@@ -93,15 +93,6 @@ class Inside(QFrame):
         self.setGeometry(self.rdw.pos().x() + Corner.radius, self.rdw.pos().y() + Corner.radius,
                          self.rdw.width() - 2 * Corner.radius, self.rdw.height() - 2 * Corner.radius)
 
-    def swap_with_shadow(self):
-        ...
-
-    def resize_to_shadow(self):
-        ...
-
-    def move_to_shadow(self):
-        ...
-
     def mouseMoveEvent(self, event):
         if self.area.state == 'idle':
             self.area.state = 'hovering_inside'
@@ -144,8 +135,22 @@ class Shadow(QLabel):
         self.setVisible(True)
         self.rdw.setVisible(False)
 
-    def resize_when_dragged(self):
-        ...
+    def deactivate(self):
+        self.rdw.shadow.setVisible(False)
+        self.rdw.setVisible(True)
+
+    def resize_when_dragged(self, c: Corner, shift: QVector2D):
+        # compute cursor projection
+        proj = QVector2D.dotProduct(shift, c.direc.normalized()) * c.direc.normalized()
+        # resize and move shadow
+        new_px_size =  QVector2D(*c.rdw.size().toSizeF().toTuple()) + c.coef * proj
+        if new_px_size.x() >= 2 * Corner.radius and new_px_size.y() >= 2 * Corner.radius:
+            c.rdw.shadow.setPixmap(c.rdw.px.scaled(*new_px_size.toTuple(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+            c.rdw.shadow.move((QVector2D(c.rdw.pos().toPointF()) + c.coefQFT * proj).toPoint())
+            c.rdw.shadow.adjustSize()
+
+    def move_when_dragged(self, shift: QVector2D):
+        self.rdw.shadow.move((QVector2D(self.rdw.pos()) + shift - self.rdw.inside.drag_anchor).toPoint())
 
 
 class ResizableDragableWidget(QLabel):
@@ -183,6 +188,18 @@ class ResizableDragableWidget(QLabel):
             c.adapt_to_rdw()
         self.inside.adapt_to_rdw()
 
+    def resize_to_shadow(self):
+        self.setPixmap(QPixmap(self.shadow.pixmap()))
+        self.move(self.shadow.pos())
+        self.adjustSize()
+        self.state = 'idle'
+        self.shadow.deactivate()
+
+    def move_to_shadow(self):
+        self.move(self.shadow.pos())
+        self.state = 'idle'
+        self.shadow.deactivate()
+
     def resizeEvent(self, event):
         self.adapt_components()
 
@@ -195,8 +212,8 @@ class DrawingArea(QWidget):
         super().__init__()
         self.state: Literal['idle', 'hovering_corner', 'resizing', 'hovering_inside', 'moving'] = 'idle'
 
-        self.rdws = [ResizableDragableWidget(self, 'static/snow.jpg', (200, 200), (300, 200)),
-                     ResizableDragableWidget(self, 'static/pp.png', (200, 200), (100, 200))]
+        self.rdws = [ResizableDragableWidget(self, 'static/lwe', (200, 200), (300, 200)),
+                     ResizableDragableWidget(self, 'static/lwe.png', (200, 200), (100, 200))]
 
         for rdw in self.rdws:
             rdw.resizing.connect(self.resize_shadow)
@@ -205,33 +222,16 @@ class DrawingArea(QWidget):
             rdw.moving_done.connect(self.move_rdw)
 
     def resize_shadow(self, rdw: ResizableDragableWidget, c: Corner, shift: QVector2D):
-        # compute cursor projection
-        proj = QVector2D.dotProduct(shift, c.direc.normalized()) * c.direc.normalized()
-        # resize and move shadow
-        rdw.shadow.setPixmap(rdw.px.scaled(
-            *(QVector2D(*rdw.size().toSizeF().toTuple()) + c.coef * proj).toTuple(),
-            Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
-        rdw.shadow.move((QVector2D(rdw.pos().toPointF()) + c.coefQFT * proj).toPoint())
-        rdw.shadow.adjustSize()
+        rdw.shadow.resize_when_dragged(c, shift)
 
     def resize_rdw(self, rdw: ResizableDragableWidget):
-        rdw.setPixmap(QPixmap(rdw.shadow.pixmap()))
-        rdw.move(rdw.shadow.pos())
-        rdw.adjustSize()
-
-        self.state = 'idle'
-        rdw.shadow.setVisible(False)
-        rdw.setVisible(True)
+        rdw.resize_to_shadow()
 
     def move_shadow(self, rdw: ResizableDragableWidget, shift: QVector2D):
-        rdw.shadow.move((QVector2D(rdw.pos()) + shift - rdw.inside.drag_anchor).toPoint())
+        rdw.shadow.move_when_dragged(shift)
 
     def move_rdw(self, rdw: ResizableDragableWidget):
-        rdw.move(rdw.shadow.pos())
-
-        self.state = 'idle'
-        rdw.shadow.setVisible(False)
-        rdw.setVisible(True)
+        rdw.move_to_shadow()
 
 
 class MainWindow(QMainWindow):
