@@ -106,5 +106,13 @@ class MainWindow(QMainWindow):
     #     self.tex_path.write_text(new_content)
 
     def add_image_to_tex(self, rdw: ResizableDragableWidget):
-        # TODO: implement this function
-        ...
+        # TODO: change this function: temporary one
+        tex_lines = self.tex_path.read_text().splitlines()
+        idx = next(i for i, l in enumerate(tex_lines) if r'\end{frame}' in l) # TODO catch possible error
+        tikz_code = '\n'.join([
+            rf'\begin{{tikzpicture}}[remember picture, overlay]',
+            rf'  \node[anchor=north west] at ([xshift={rdw.pos().x()}, yshift=-{rdw.pos().y()}] current page.north west) {{\includegraphics[width={rdw.width()}px]{{{rdw.path}}}}};',
+            rf'\end{{tikzpicture}}'
+        ])
+        new_content = '\n'.join(tex_lines[:idx]) + '\n' + tikz_code + '\n' + '\n'.join(tex_lines[idx:]) # TODO: use insert
+        self.tex_path.write_text(new_content)

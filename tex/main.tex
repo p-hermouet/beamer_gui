@@ -8,13 +8,17 @@
 
 $SIS \longrightarrow LWE$
 
-%% BEAMER_GUI BEGIN RDW   
-\begin{{tikzpicture}}[remember picture, overlay]
-  \node[anchor=north west] at ([xshift={x}, yshift=-{y}] current page.north west) {{\includegraphics[width={width}px]{{{path}}}}};
-\end{{tikzpicture}}
-%% BEAMER_GUI END RDW
+% %% BEAMER_GUI BEGIN RDW   
+% \begin{{tikzpicture}}[remember picture, overlay]
+%   \node[anchor=north west] at ([xshift={x}, yshift=-{y}] current page.north west) {{\includegraphics[width={width}px]{{{path}}}}};
+% \end{{tikzpicture}}
+% %% BEAMER_GUI END RDW
 
 
+\begin{tikzpicture}[remember picture, overlay]
+  \node[anchor=north west] at ([xshift=665, yshift=185] current page.north west) {\includegraphics[width=204px]{static/lwe.png}};
+  \node[anchor=north west, draw=black] at ([xshift=450, yshift=0] current page.north west) {\includegraphics[width=204px]{static/lwe.png}};
+\end{tikzpicture}
 \end{frame}
 
 \end{document}

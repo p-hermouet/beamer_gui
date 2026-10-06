@@ -33,7 +33,7 @@ class PdfView(QWidget):
 
     def compile_tex(self, path: str|Path):
         if Path(path).is_file():
-            proc = subprocess.Popen(['pdflatex', '-output-dir=tmp', str(path)])
+            proc = subprocess.Popen(['pdflatex', '-output-dir=tmp', str(path)]) # TODO: replace with a QProcess or something Qt
             proc.wait()
             self.pdf_path = Path('tmp')/ Path(path).with_suffix('.pdf').name
             logging.info(f'pdflatex returned {proc.returncode}')

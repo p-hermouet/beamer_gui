@@ -165,6 +165,7 @@ class ResizableDragableWidget(QLabel):
     def __init__(self, area: DrawingArea, path: str|Path, size: tuple[int, int], pos: tuple[int, int]):
         super().__init__(parent=area)
         self.area = area
+        self.path = path
         self.setStyleSheet('QLabel {border: 2px solid red;}')
 
         self.px = QPixmap(path)
