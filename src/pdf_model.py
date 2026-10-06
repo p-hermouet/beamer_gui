@@ -22,16 +22,21 @@ class PdfModel:
 
     @classmethod
     def _parse_begin_end_block(cls, m1: Match, m2: Match) -> RDWModel|None:
-        patter_begin = '%%.*BEAMER_GUI::.*::BEGIN'
-        patter_end = '%%.*BEAMER_GUI::.*::END'
-        if re.search('%%.*BEAMER_GUI::.*::BEGIN', m1.string[m1.start():m1.end()]):
-            ...
-        else:
-            
+        if m1['type'] == 'BEGIN' and m2['type'] == 'END' and m1['element'] == m2['element']:
+            match m1['element']:
+                case 'RDW':
+                    ...
+                case _:
+                    return
 
     @classmethod
     def parse(cls, path: str|Path):
 
         content = Path(path).read_text()
-        for m1, m2 in batched(re.finditer('%%.*BEAMER_GUI::.*::(BEGIN|END)', content), n=2):
-            
+        for m1, m2 in batched(re.finditer(r'%% *BEAMER_GUI *(?P<type>\w+) *(?P<element>\w+)', content), n=2):
+            ...
+
+
+if __name__ == "__main__":
+    content = Path().read_text()
+    

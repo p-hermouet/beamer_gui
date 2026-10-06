@@ -8,15 +8,11 @@
 
 $SIS \longrightarrow LWE$
 
-%% BEAMER_GUI::RDW::BEGIN
-%% path="static/pp.png"
-%% size=[10, 10]
-%% pos = [10, 10]
-\begin{figure}
-  \centering
-  \includegraphics[scale=1]{static/pp.png}
-\end{figure}
-%% BEAMER_GUI::RDW::END
+%% BEAMER_GUI BEGIN RDW   
+\begin{{tikzpicture}}[remember picture, overlay]
+  \node[anchor=north west] at ([xshift={x}, yshift=-{y}] current page.north west) {{\includegraphics[width={width}px]{{{path}}}}};
+\end{{tikzpicture}}
+%% BEAMER_GUI END RDW
 
 
 \end{frame}
