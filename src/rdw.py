@@ -64,7 +64,7 @@ class Corner(QFrame):
     def mousePressEvent(self, event):
         if self.area.state == 'hovering_corner':
             self.area.state = 'resizing'
-            self.rdw.shadow.init()
+            self.rdw.shadow.activate()
         event.accept()
 
     def mouseReleaseEvent(self, event):
@@ -110,7 +110,7 @@ class Inside(QFrame):
             self.area.state = 'moving'
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
             self.drag_anchor = QVector2D(event.position())
-            self.rdw.shadow.init()
+            self.rdw.shadow.activate()
         event.accept()
 
     def mouseReleaseEvent(self, event):
@@ -128,16 +128,12 @@ class Shadow(QLabel):
         self.rdw = rdw
         self.area = rdw.area
 
-    def init(self):
+    def activate(self):
         self.setPixmap(QPixmap(self.rdw.pixmap()))
         self.move(self.rdw.pos())
         self.adjustSize()
         self.setVisible(True)
         self.rdw.setVisible(False)
-
-    def deactivate(self):
-        self.rdw.shadow.setVisible(False)
-        self.rdw.setVisible(True)
 
     def resize_when_dragged(self, c: Corner, shift: QVector2D):
         # compute cursor projection
@@ -163,10 +159,11 @@ class ResizableDragableWidget(QLabel):
 
 
     def __init__(self, area: DrawingArea, path: str|Path, size: tuple[int, int], pos: tuple[int, int]):
+        # TODO: ideally, i should not need to know that area is a DrawingArea. All use of self.area.<...> should be replaced by signals sent to the DrawingArea instance.
         super().__init__(parent=area)
         self.area = area
         self.path = path
-        self.setStyleSheet('QLabel {border: 2px solid red;}')
+        # self.setStyleSheet('QLabel {border: 2px solid red;}')
 
         self.px = QPixmap(path)
         self.setPixmap(self.px.scaled(*size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
@@ -194,17 +191,21 @@ class ResizableDragableWidget(QLabel):
 
     def resize_to_shadow(self):
         self.setPixmap(QPixmap(self.shadow.pixmap()))
-        self.move(self.shadow.pos())
         self.adjustSize()
+        self.move(self.shadow.pos())
         self.state = 'idle'
-        self.shadow.deactivate()
+        self.adapt_components()
+        self.shadow.setVisible(False)
+        self.setVisible(True)
 
     def move_to_shadow(self):
         self.move(self.shadow.pos())
         self.state = 'idle'
-        self.shadow.deactivate()
+        self.shadow.setVisible(False)
+        self.setVisible(True)
 
     def resizeEvent(self, event):
+        # TODO: it never gets called, figure out why; i currently circumvent it by calling directly self.adapt_components when needed
         self.adapt_components()
 
     def moveEvent(self, event):

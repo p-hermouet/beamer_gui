@@ -116,8 +116,9 @@ class MainWindow(QMainWindow):
         idx = next(i for i, l in enumerate(tex_lines) if r'\end{frame}' in l) # TODO catch possible error
         tikz_code = '\n'.join([
             rf'\begin{{tikzpicture}}[remember picture, overlay]',
-            rf'  \node[anchor=north west] at ([xshift={x}, yshift=-{y}] current page.north west) {{\includegraphics[width={width}pt]{{{rdw.path}}}}};',
+            rf'  \node[anchor=north west] at ([xshift={x - 6}, yshift=-{y - 6}] current page.north west) {{\includegraphics[width={width}pt]{{{rdw.path}}}}};',
             rf'\end{{tikzpicture}}'
         ])
+        # TODO: i need to understand why i need a "-6" shift
         new_content = '\n'.join(tex_lines[:idx]) + '\n' + tikz_code + '\n' + '\n'.join(tex_lines[idx:]) # TODO: use insert
         self.tex_path.write_text(new_content)
