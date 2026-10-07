@@ -107,11 +107,16 @@ class MainWindow(QMainWindow):
 
     def add_image_to_tex(self, rdw: ResizableDragableWidget):
         # TODO: change this function: temporary one
+        ratio = self.pdf_view.doc_size[0] / self.pdf_view.view.size().width()
+        x = rdw.pos().x() * ratio
+        y = rdw.pos().y() * ratio
+        width = rdw.width() * ratio
+
         tex_lines = self.tex_path.read_text().splitlines()
         idx = next(i for i, l in enumerate(tex_lines) if r'\end{frame}' in l) # TODO catch possible error
         tikz_code = '\n'.join([
             rf'\begin{{tikzpicture}}[remember picture, overlay]',
-            rf'  \node[anchor=north west] at ([xshift={rdw.pos().x()}, yshift=-{rdw.pos().y()}] current page.north west) {{\includegraphics[width={rdw.width()}px]{{{rdw.path}}}}};',
+            rf'  \node[anchor=north west] at ([xshift={x}, yshift=-{y}] current page.north west) {{\includegraphics[width={width}pt]{{{rdw.path}}}}};',
             rf'\end{{tikzpicture}}'
         ])
         new_content = '\n'.join(tex_lines[:idx]) + '\n' + tikz_code + '\n' + '\n'.join(tex_lines[idx:]) # TODO: use insert
