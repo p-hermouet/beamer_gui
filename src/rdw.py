@@ -9,7 +9,7 @@ import subprocess
 import tomllib
 from typing import Any, Literal, Self
 
-from PySide6.QtCore import Qt, QMargins, Signal, QMimeData, QPoint, QRect, QEvent
+from PySide6.QtCore import Qt, QMargins, Signal, QMimeData, QPoint, QRect, QEvent, QRectF
 from PySide6.QtGui import QAction, QPixmap, QDrag, QPainter, QBrush, QColor, QPen, QVector2D
 from PySide6.QtPdf import QPdfDocument
 from PySide6.QtPdfWidgets import QPdfView
@@ -157,13 +157,12 @@ class ResizableDragableWidget(QLabel):
     moving = Signal(QLabel, QVector2D)
     moving_done = Signal(QLabel)
 
-
     def __init__(self, area: DrawingArea, path: str|Path, size: tuple[int, int], pos: tuple[int, int]):
         # TODO: ideally, i should not need to know that area is a DrawingArea. All use of self.area.<...> should be replaced by signals sent to the DrawingArea instance.
         super().__init__(parent=area)
         self.area = area
         self.path = path
-        # self.setStyleSheet('QLabel {border: 2px solid red;}')
+        # self.setStyleSheet('QLabel {outline: red solid 2px;}') # this produces a shift of 
 
         self.px = QPixmap(path)
         self.setPixmap(self.px.scaled(*size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
@@ -210,3 +209,11 @@ class ResizableDragableWidget(QLabel):
 
     def moveEvent(self, event):
         self.adapt_components()
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        border_width = 2
+        painter = QPainter(self)
+        painter.setPen(QPen(QColor('red'), border_width))
+        half = border_width / 2
+        painter.drawRect(QRectF(self.rect()).adjusted(half, half, -half, -half))

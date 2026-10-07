@@ -93,18 +93,6 @@ class MainWindow(QMainWindow):
             # FloatingResource(path, self.pdf_view.view)
             self.draw_area.add_rdw(path, (200, 200), (200, 200))
 
-    # def add_image_to_tex(self, x: float, y: float, width: float, path: str|Path):
-    #     # TODO: change this function: temporary one
-    #     tex_lines = self.tex_path.read_text().splitlines()
-    #     idx = next(i for i, l in enumerate(tex_lines) if r'\end{frame}' in l) # TODO catch possible error
-    #     tikz_code = '\n'.join([
-    #         rf'\begin{{tikzpicture}}[remember picture, overlay]',
-    #         rf'  \node[anchor=north west] at ([xshift={x}, yshift=-{y}] current page.north west) {{\includegraphics[width={width}px]{{{path}}}}};',
-    #         rf'\end{{tikzpicture}}'
-    #     ])
-    #     new_content = '\n'.join(tex_lines[:idx]) + '\n' + tikz_code + '\n' + '\n'.join(tex_lines[idx:]) # TODO: use insert
-    #     self.tex_path.write_text(new_content)
-
     def add_image_to_tex(self, rdw: ResizableDragableWidget):
         # TODO: change this function: temporary one
         ratio = self.pdf_view.doc_size[0] / self.pdf_view.view.size().width()
