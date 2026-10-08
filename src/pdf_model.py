@@ -5,29 +5,30 @@ from re import Match
 
 
 class RDWModel:
-    def __init__(self, path: str|Path, width: int, pos: tuple[int, int], block_span: tuple[int, int], content_span: tuple[int, int]):
+    def __init__(self, path: str|Path, width: int, pos: tuple[int, int], block_span: tuple[int, int]):
         self.path = path
         self.width = width
         self.pos = pos
         self.block_span = block_span
-        self.content_span = content_span
 
     @classmethod
     def from_re_match(cls, m1: Match, m2: Match):
         tex = m1.string[m1.start():m2.end()]
-        mxy = re.search(r'\[ *xshift *= *(?P<x>\d+)* *, *yshift *= *- *(?P<y>\d+)* *\]', tex)
-        mpw = re.search(r'\[width *= *(?P<width>\d+)\w+\]{ *(?P<path>[^}]+) *}', tex)
+        mxy = re.search(r'\[ *xshift *= *(?P<x>\d+\.\d+)* *, *yshift *= *- *(?P<y>\d+\.\d+)* *\]', tex)
+        mpw = re.search(r'\[width *= *(?P<width>\d+\.\d+)\w+\]{ *(?P<path>[^}]+) *}', tex)
         return cls(path=Path(mpw['path']),
-                   width=int(mpw['width']),
-                   pos=(int(mxy['x']), int(mxy['y'])),
-                   block_span=(m1.start(), m2.end()),
-                   content_span=(m1.end(), m2.start()))
+                   width=float(mpw['width']),
+                   pos=(float(mxy['x']), float(mxy['y'])),
+                   block_span=(m1.start(), m2.end()))
 
     def to_tex(self) -> str:
         (x, y), width, path = self.pos, self.width, self.path
-        return  (rf'\begin{{tikzpicture}}[remember picture, overlay]' + '\n'
+        return  ('%% BEAMER_GUI BEGIN RDW' + '\n'
+                rf'\begin{{tikzpicture}}[remember picture, overlay]' + '\n'
                 rf'  \node[anchor=north west] at ([xshift={x - 6}, yshift=-{y - 6}] current page.north west) {{\includegraphics[width={width}pt]{{{path}}}}};' + '\n'
-                rf'\end{{tikzpicture}}')
+                rf'\end{{tikzpicture}}' + '\n'
+                '%% BEAMER_GUI END RDW')
+        # TODO: this -6 should be investigated (plus, it's not 100% precise)
 
 
 class PdfModel:

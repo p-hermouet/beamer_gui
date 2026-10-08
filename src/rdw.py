@@ -164,7 +164,6 @@ class ResizableDragableWidget(QLabel):
         super().__init__(parent=area)
         self.area = area
         self.path = path
-        self.model: RDWModel = None
 
         self.px = QPixmap(path)
         self.setPixmap(self.px.scaled(*size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
@@ -185,12 +184,8 @@ class ResizableDragableWidget(QLabel):
         self.inside.moving.connect(lambda shift: self.moving.emit(self, shift))
         self.inside.moving_done.connect(lambda: self.moving_done.emit(self))
 
-    @classmethod
-    def from_model(cls, area: DrawingArea, model: RDWModel):
-        px = QPixmap(model.path)
-        ratio = px.width() / px.height()
-        cls(area, model.path, (model.width, model.width / ratio), model.pos)
-        # TODO: ideally i should not require ratio to be explicitely computed. creating the pixmap in the constructor with a height of 1 and KeepAspectRatioByExpanding should creates the pixmap i want. However this cannot be the only way to create a RDW, as i also need it to fit into the rectangle (pdfview.width()/10, pdfview.height()/10), and for that i need both to input width and height and use KeepAspectRatio.
+    def to_model(self, ratio: float, block_span: tuple[int, int]):
+        return RDWModel(self.path, self.width() * ratio, (self.pos().x() * ratio, self.pos().y() * ratio), block_span)
 
     def adapt_components(self):
         for c in [self.corner_tl, self.corner_tr, self.corner_br, self.corner_bl]:
@@ -226,3 +221,14 @@ class ResizableDragableWidget(QLabel):
         painter.setPen(QPen(QColor('red'), border_width))
         half = border_width / 2
         painter.drawRect(QRectF(self.rect()).adjusted(half, half, -half, -half))
+
+
+class ModeledResizableDragableWidget(ResizableDragableWidget):
+    def __init__(self, area, model: RDWModel, ratio: float):
+        px = QPixmap(model.path)
+        px_ratio = px.width() / px.height()
+        # import ipdb; ipdb.set_trace()
+        height = model.width / px_ratio
+        super().__init__(area, model.path, (model.width / ratio, height / ratio), ((model.pos[0] + 6) / ratio, (model.pos[1] + 6) / ratio))
+        # TODO: ideally i should not require ratio to be explicitely computed. creating the pixmap in the constructor with a height of 1 and KeepAspectRatioByExpanding should creates the pixmap i want. However this cannot be the only way to create a RDW, as i also need it to fit into the rectangle (pdfview.width()/10, pdfview.height()/10), and for that i need both to input width and height and use KeepAspectRatio.
+        self.model = model

@@ -16,7 +16,7 @@ from src.menu import Menu
 from src.pdf_model import PdfModel, RDWModel
 from src.pdf_view import PdfView
 from src.resources import Resources, ResourceThumbnail, FloatingResource
-from src.rdw import ResizableDragableWidget
+from src.rdw import ResizableDragableWidget, ModeledResizableDragableWidget
 from src.strucs import MainStruc
 from src.test import TestButton
 
@@ -81,10 +81,11 @@ class MainWindow(QMainWindow):
 
     def compile_and_display(self):
         self.pdf_view.compile_tex(self.tex_path)
+        self.pdf_view.display()
         model = PdfModel.parse(self.tex_path)
         for rdw in model.rdws:
-            ... # TODO add rdw, probably need to instantiate an RDW w/o height (see TODO in RDW about KeepAspectRatio)
-        self.pdf_view.display()
+            ratio = self.pdf_view.doc_size[0] / self.pdf_view.view.size().width()
+            self.draw_area.add_rdw(ModeledResizableDragableWidget(self.draw_area, rdw, ratio))
 
     def swap_pdf_struc(self):
         if self.stack.layout().currentIndex() == 0:
@@ -94,23 +95,29 @@ class MainWindow(QMainWindow):
 
     def add_resource_to_pdf(self, path: str|Path):
         if (doc := self.pdf_view.view.document()) and doc.status() == QPdfDocument.Status.Ready:
-            # FloatingResource(path, self.pdf_view.view)
-            self.draw_area.add_rdw(path, (200, 200), (200, 200))
+            self.draw_area.add_rdw(ResizableDragableWidget(self.draw_area, path, (200, 200), (200, 200)))
+            # TODO: (200, 200), (200, 200) seems hardcoded, make it depend on the pdfdoc size
 
     def add_image_to_tex(self, rdw: ResizableDragableWidget):
         # TODO: change this function: temporary one
         ratio = self.pdf_view.doc_size[0] / self.pdf_view.view.size().width()
-        x = rdw.pos().x() * ratio
-        y = rdw.pos().y() * ratio
-        width = rdw.width() * ratio
+        if isinstance(rdw, ModeledResizableDragableWidget):
+            content = self.tex_path.read_text()
+            new_content = rdw.to_model(ratio, rdw.model.block_span).to_tex()
+            new_content = content[:rdw.model.block_span[0]] + new_content + content[rdw.model.block_span[1]:]
+        else:
+            tex_lines = self.tex_path.read_text().splitlines()
+            idx = next(i for i, l in enumerate(tex_lines) if r'\end{frame}' in l) # TODO catch possible error
 
-        tex_lines = self.tex_path.read_text().splitlines()
-        idx = next(i for i, l in enumerate(tex_lines) if r'\end{frame}' in l) # TODO catch possible error
-        tikz_code = '\n'.join([
-            rf'\begin{{tikzpicture}}[remember picture, overlay]',
-            rf'  \node[anchor=north west] at ([xshift={x - 6}, yshift=-{y - 6}] current page.north west) {{\includegraphics[width={width}pt]{{{rdw.path}}}}};',
-            rf'\end{{tikzpicture}}'
-        ])
-        # TODO: i need to understand why i need a "-6" shift
-        new_content = '\n'.join(tex_lines[:idx]) + '\n' + tikz_code + '\n' + '\n'.join(tex_lines[idx:]) # TODO: use insert
+            x = rdw.pos().x() * ratio
+            y = rdw.pos().y() * ratio
+            width = rdw.width() * ratio
+
+            tikz_code = '\n'.join([
+                rf'\begin{{tikzpicture}}[remember picture, overlay]',
+                rf'  \node[anchor=north west] at ([xshift={x - 6}, yshift=-{y - 6}] current page.north west) {{\includegraphics[width={width}pt]{{{rdw.path}}}}};',
+                rf'\end{{tikzpicture}}'
+            ])
+            # TODO: i need to understand why i need a "-6" shift
+            new_content = '\n'.join(tex_lines[:idx]) + '\n' + tikz_code + '\n' + '\n'.join(tex_lines[idx:]) # TODO: use insert
         self.tex_path.write_text(new_content)

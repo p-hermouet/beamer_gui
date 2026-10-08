@@ -29,8 +29,7 @@ class DrawingArea(QWidget):
 
         self.rdws = []
 
-    def add_rdw(self, path: str|Path, size: tuple[int, int], pos: tuple[int, int]):
-        rdw = ResizableDragableWidget(self, path, size, pos)
+    def add_rdw(self, rdw: ResizableDragableWidget):
         rdw.resizing.connect(self.resize_shadow)
         rdw.resizing_done.connect(self.resize_rdw)
         rdw.moving.connect(self.move_shadow)
