@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, Q
 from src.config import cfg
 from src.drawing_area import DrawingArea
 from src.menu import Menu
+from src.pdf_model import PdfModel, RDWModel
 from src.pdf_view import PdfView
 from src.resources import Resources, ResourceThumbnail, FloatingResource
 from src.rdw import ResizableDragableWidget
@@ -80,6 +81,9 @@ class MainWindow(QMainWindow):
 
     def compile_and_display(self):
         self.pdf_view.compile_tex(self.tex_path)
+        model = PdfModel.parse(self.tex_path)
+        for rdw in model.rdws:
+            ... # TODO add rdw, probably need to instantiate an RDW w/o height (see TODO in RDW about KeepAspectRatio)
         self.pdf_view.display()
 
     def swap_pdf_struc(self):

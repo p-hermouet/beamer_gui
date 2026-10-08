@@ -15,6 +15,8 @@ from PySide6.QtPdf import QPdfDocument
 from PySide6.QtPdfWidgets import QPdfView
 from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QMenu, QStatusBar, QToolBar, QStackedLayout, QScrollArea, QSizePolicy, QFrame
 
+from src.pdf_model import RDWModel
+
 logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 
 
@@ -162,7 +164,7 @@ class ResizableDragableWidget(QLabel):
         super().__init__(parent=area)
         self.area = area
         self.path = path
-        # self.setStyleSheet('QLabel {outline: red solid 2px;}') # this produces a shift of 
+        self.model: RDWModel = None
 
         self.px = QPixmap(path)
         self.setPixmap(self.px.scaled(*size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
@@ -182,6 +184,13 @@ class ResizableDragableWidget(QLabel):
             c.resizing_done.connect(lambda: self.resizing_done.emit(self))
         self.inside.moving.connect(lambda shift: self.moving.emit(self, shift))
         self.inside.moving_done.connect(lambda: self.moving_done.emit(self))
+
+    @classmethod
+    def from_model(cls, area: DrawingArea, model: RDWModel):
+        px = QPixmap(model.path)
+        ratio = px.width() / px.height()
+        cls(area, model.path, (model.width, model.width / ratio), model.pos)
+        # TODO: ideally i should not require ratio to be explicitely computed. creating the pixmap in the constructor with a height of 1 and KeepAspectRatioByExpanding should creates the pixmap i want. However this cannot be the only way to create a RDW, as i also need it to fit into the rectangle (pdfview.width()/10, pdfview.height()/10), and for that i need both to input width and height and use KeepAspectRatio.
 
     def adapt_components(self):
         for c in [self.corner_tl, self.corner_tr, self.corner_br, self.corner_bl]:
