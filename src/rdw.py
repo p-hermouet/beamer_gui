@@ -184,8 +184,8 @@ class ResizableDragableWidget(QLabel):
         self.inside.moving.connect(lambda shift: self.moving.emit(self, shift))
         self.inside.moving_done.connect(lambda: self.moving_done.emit(self))
 
-    def to_model(self, ratio: float, block_span: tuple[int, int]):
-        return RDWModel(self.path, self.width() * ratio, (self.pos().x() * ratio, self.pos().y() * ratio), block_span)
+    def to_model(self, id:str, ratio: float, block_span: tuple[int, int]):
+        return RDWModel(id, self.path, self.width() * ratio, (self.pos().x() * ratio, self.pos().y() * ratio), block_span)
 
     def adapt_components(self):
         for c in [self.corner_tl, self.corner_tr, self.corner_br, self.corner_bl]:

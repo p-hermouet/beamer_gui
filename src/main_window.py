@@ -103,8 +103,13 @@ class MainWindow(QMainWindow):
         ratio = self.pdf_view.doc_size[0] / self.pdf_view.view.size().width()
         if isinstance(rdw, ModeledResizableDragableWidget):
             content = self.tex_path.read_text()
-            new_content = rdw.to_model(ratio, rdw.model.block_span).to_tex()
-            new_content = content[:rdw.model.block_span[0]] + new_content + content[rdw.model.block_span[1]:]
+            new_content = rdw.to_model(rdw.model.id, ratio, rdw.model.block_span).to_tex()
+            model = PdfModel.parse(self.tex_path)
+            try:
+                r = next(r for r in model.rdws if r.id == rdw.model.id)
+                new_content = content[:r.block_span[0]] + new_content + content[r.block_span[1]:]
+            except StopIteration:
+                return
         else:
             tex_lines = self.tex_path.read_text().splitlines()
             idx = next(i for i, l in enumerate(tex_lines) if r'\end{frame}' in l) # TODO catch possible error
