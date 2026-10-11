@@ -15,7 +15,7 @@ from PySide6.QtPdf import QPdfDocument
 from PySide6.QtPdfWidgets import QPdfView
 from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QMenu, QStatusBar, QToolBar, QStackedLayout, QScrollArea, QSizePolicy, QFrame
 
-from src.rdw import Corner, Inside, ResizableDragableWidget, Shadow
+from src.rdw import Corner, Inside, ResizableDragableWidget, Shadow, Mask
 
 logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 
@@ -27,7 +27,7 @@ class DrawingArea(QWidget):
         super().__init__()
         self.state: Literal['idle', 'hovering_corner', 'resizing', 'hovering_inside', 'moving'] = 'idle'
 
-        self.rdws = []
+        self.rdws: list[ResizableDragableWidget] = []
 
     def add_rdw(self, rdw: ResizableDragableWidget):
         rdw.resizing.connect(self.resize_shadow)
@@ -35,6 +35,11 @@ class DrawingArea(QWidget):
         rdw.moving.connect(self.move_shadow)
         rdw.moving_done.connect(self.move_rdw)
         self.rdws.append(rdw)
+
+    def clear(self):
+        for rdw in self.rdws:
+            rdw.remove()
+        self.rdws = []
 
     def resize_shadow(self, rdw: ResizableDragableWidget, c: Corner, shift: QVector2D):
         rdw.shadow.resize_when_dragged(c, shift)

@@ -15,8 +15,8 @@ from src.drawing_area import DrawingArea
 from src.menu import Menu
 from src.pdf_model import PdfModel, RDWModel
 from src.pdf_view import PdfView
-from src.resources import Resources, ResourceThumbnail, FloatingResource
-from src.rdw import ResizableDragableWidget, ModeledResizableDragableWidget
+from src.resources import Resources
+from src.rdw import ResizableDragableWidget, Mask
 from src.strucs import MainStruc
 from src.test import TestButton
 
@@ -44,7 +44,6 @@ class MainWindow(QMainWindow):
         self.menu.compile_action.triggered.connect(self.compile_and_display)
         self.menu.swap_action.triggered.connect(self.swap_pdf_struc)
         self.resources.resource_list.double_clicked.connect(self.add_resource_to_pdf)
-        self.pdf_view.float_resource_dropped.connect(self.add_image_to_tex) # to remove: not used any longer
         self.draw_area.rdw_modified.connect(self.add_image_to_tex)
 
         if Path(cfg['last_tex']).is_file():
@@ -82,10 +81,13 @@ class MainWindow(QMainWindow):
     def compile_and_display(self):
         self.pdf_view.compile_tex(self.tex_path)
         self.pdf_view.display()
+        self.draw_area.clear()
         model = PdfModel.parse(self.tex_path)
-        for rdw in model.rdws:
-            ratio = self.pdf_view.doc_size[0] / self.pdf_view.view.size().width()
-            self.draw_area.add_rdw(ModeledResizableDragableWidget(self.draw_area, rdw, ratio))
+        ratio = self.pdf_view.doc_size[0] / self.pdf_view.view.size().width()
+        rdws = [ResizableDragableWidget.from_model(self.draw_area, m_rdw, ratio) for m_rdw in model.rdws]
+        for rdw in rdws:
+            rdw.hidding_mask.stackUnder(rdws[0])
+            self.draw_area.add_rdw(rdw)
 
     def swap_pdf_struc(self):
         if self.stack.layout().currentIndex() == 0:
@@ -99,30 +101,21 @@ class MainWindow(QMainWindow):
             # TODO: (200, 200), (200, 200) seems hardcoded, make it depend on the pdfdoc size
 
     def add_image_to_tex(self, rdw: ResizableDragableWidget):
-        # TODO: change this function: temporary one
+        # TODO: change this function: temporary one; i think parts of it must be in PdfModel
+        model = PdfModel.parse(self.tex_path)
         ratio = self.pdf_view.doc_size[0] / self.pdf_view.view.size().width()
-        if isinstance(rdw, ModeledResizableDragableWidget):
-            content = self.tex_path.read_text()
-            new_content = rdw.to_model(rdw.model.id, ratio, rdw.model.block_span).to_tex()
-            model = PdfModel.parse(self.tex_path)
-            try:
-                r = next(r for r in model.rdws if r.id == rdw.model.id)
-                new_content = content[:r.block_span[0]] + new_content + content[r.block_span[1]:]
-            except StopIteration:
+        content = self.tex_path.read_text()
+        if rdw.model:
+            r = model.find_rdw_from_id(rdw.model.id)
+            if not r:
                 return
+            new_block = rdw.to_model(r.id, ratio).to_tex()
+            new_content = content[:r.block_span[0]] + new_block + content[r.block_span[1]:]
+            self.tex_path.write_text(new_content)
         else:
-            tex_lines = self.tex_path.read_text().splitlines()
-            idx = next(i for i, l in enumerate(tex_lines) if r'\end{frame}' in l) # TODO catch possible error
-
-            x = rdw.pos().x() * ratio
-            y = rdw.pos().y() * ratio
-            width = rdw.width() * ratio
-
-            tikz_code = '\n'.join([
-                rf'\begin{{tikzpicture}}[remember picture, overlay]',
-                rf'  \node[anchor=north west] at ([xshift={x - 6}, yshift=-{y - 6}] current page.north west) {{\includegraphics[width={width}pt]{{{rdw.path}}}}};',
-                rf'\end{{tikzpicture}}'
-            ])
-            # TODO: i need to understand why i need a "-6" shift
-            new_content = '\n'.join(tex_lines[:idx]) + '\n' + tikz_code + '\n' + '\n'.join(tex_lines[idx:]) # TODO: use insert
-        self.tex_path.write_text(new_content)
+            id = model.find_new_rdw_id()
+            new_block = rdw.to_model(id, ratio).to_tex()
+            new_content = content[:model.end_frame_pos] + new_block + '\n\n' + content[model.end_frame_pos:]
+            self.tex_path.write_text(new_content)
+            model = PdfModel.parse(self.tex_path)
+            rdw.model = model.find_rdw_from_id(id)

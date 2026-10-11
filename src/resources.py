@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 import subprocess
 import tomllib
+from typing import Literal
 
 from PySide6.QtCore import Qt, QMargins, Signal, QMimeData
 from PySide6.QtGui import QPixmap, QColor, QDrag
@@ -42,13 +43,10 @@ class ResourceList(QScrollArea):
         self.setWidgetResizable(True)
 
     def add_resource(self, resource_path: str|Path):
-        # TODO i want the resources not to move when the scroll bar appears
-        im = ResourceThumbnail(resource_path, self)
-        if not im.im.pixmap().isNull():
-            self.content.layout().addWidget(im)
+        self.content.add_resource(resource_path)
 
-    def rm_resource(self, resource: str|Path|int):
-        ... # TODO (resource) can be path or index
+    def rm_resource(self, resource: QWidget):
+        self.content.rm_resource(resource)
 
 
 class ResourceListContent(QWidget):
@@ -56,8 +54,21 @@ class ResourceListContent(QWidget):
         super().__init__()
         self.setLayout(QVBoxLayout(alignment=Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignTop))
 
+    def add_resource(self, resource_path: str|Path):
+        # TODO i want the resources not to move when the scroll bar appears
+        im = ResourceThumbnail(resource_path, self)
+        if not im.im.pixmap().isNull():
+            self.layout().addWidget(im)
+            im.destroyed_resource.connect(self.rm_resource)
+
+    def rm_resource(self, resource: QWidget):
+        self.layout().removeWidget(resource)
+        resource.deleteLater()
+
 
 class ResourceThumbnail(QFrame):
+    destroyed_resource = Signal(QWidget)
+
     def __init__(self, path: str|Path, scroll_area: QScrollArea):
         super().__init__()
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
@@ -67,9 +78,13 @@ class ResourceThumbnail(QFrame):
         self.scroll_area = scroll_area
 
         self.im = ResourceThumbnailLabel(path, scroll_area)
+        self.cross = Cross(self, self.im)
 
         self.setLayout(QHBoxLayout(alignment=Qt.AlignmentFlag.AlignCenter))
         self.layout().addWidget(self.im)
+        self.im.stackUnder(self.cross)
+
+        self.cross.destroy_resource.connect(lambda: self.destroyed_resource.emit(self))
 
     def mouseDoubleClickEvent(self, e):
         super().mouseDoubleClickEvent(e)
@@ -78,10 +93,12 @@ class ResourceThumbnail(QFrame):
     def enterEvent(self, e):
         super().enterEvent(e)
         self.setStyleSheet(f'QFrame {{background-color: {QColor(227, 227, 125).name()}}};')
+        self.cross.setVisible(True)
 
     def leaveEvent(self, e):
         super().leaveEvent(e)
         self.setStyleSheet('')
+        self.cross.setVisible(False)
 
 class ResourceThumbnailLabel(QLabel):
     def __init__(self, path: str|Path, scroll_area: QScrollArea):
@@ -94,34 +111,23 @@ class ResourceThumbnailLabel(QLabel):
         self.setPixmap(pixmap)
 
 
-# TODO: to remove: no longer used
-class FloatingResource(QLabel):
-    def __init__(self, path:str|Path, pdf_view: QPdfView):
-        super().__init__(pdf_view)
-        self.setStyleSheet('QLabel {border: 2px solid blue;}')
+class Cross(QLabel):
+    destroy_resource = Signal()
 
-        self.path = path
-        self.offset = 0., 0.
+    def __init__(self, parent, tb: ResourceThumbnailLabel):
+        super().__init__(parent)
+        self.px = QPixmap('icons/xmark-square-solid.svg')
+        self.setPixmap(self.px.scaled(.05 * parent.width(), .05 * parent.width(), Qt.AspectRatioMode.KeepAspectRatio))
+        self.adjustSize()
+        self.move(tb.pos())
 
-        w, h = pdf_view.size().width(), pdf_view.size().height()
-        pixmap = QPixmap(path).scaled(w/10, h/10, Qt.AspectRatioMode.KeepAspectRatio)
-        self.setPixmap(pixmap)
+    def enterEvent(self, event):
+        super().enterEvent(event)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
 
-        x = (pdf_view.x() + pdf_view.width()) / 2
-        y = (pdf_view.y() + pdf_view.height()) / 2
-        self.setGeometry(x, y, pixmap.width(), pixmap.height())
+    def leaveEvent(self, event):
+        super().leaveEvent(event)
+        self.unsetCursor()
 
-        self.show()
-
-    def mouseMoveEvent(self, ev):
-        super().mouseMoveEvent(ev)
-        if ev.buttons() == Qt.MouseButton.LeftButton:
-            drag = QDrag(self)
-            pixmap = QPixmap(self.size())
-            self.render(pixmap)
-            drag.setMimeData(QMimeData())
-            drag.setPixmap(pixmap)
-            offset = drag.hotSpot()
-            drag.setHotSpot(ev.pos())
-            self.offset = ev.pos() - offset
-            drag.exec(Qt.DropAction.MoveAction)
+    def mousePressEvent(self, ev):
+        self.destroy_resource.emit()

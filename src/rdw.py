@@ -153,6 +153,14 @@ class Shadow(QLabel):
             self.rdw.shadow.move(new_pos.toPoint())
 
 
+class Mask(QFrame):
+    def __init__(self, rdw: ResizableDragableWidget):
+        super().__init__(rdw.parent())
+        self.setStyleSheet('QFrame {background-color: white;}')
+        self.setGeometry(rdw.x(), rdw.y(), rdw.width() + 2, rdw.height() + 2) # TODO here is because of the weird shift, should not be there ultimately
+        self.show()
+
+
 class ResizableDragableWidget(QLabel):
     resizing = Signal(QLabel, Corner, QVector2D)
     resizing_done = Signal(QLabel)
@@ -164,12 +172,12 @@ class ResizableDragableWidget(QLabel):
         super().__init__(parent=area)
         self.area = area
         self.path = path
+        self.model: RDWModel|None= None
 
         self.px = QPixmap(path)
         self.setPixmap(self.px.scaled(*size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
         self.move(*pos)
         self.adjustSize()
-        self.show()
 
         self.inside = Inside(self)
         self.corner_tl = Corner(self, QVector2D(-1, -1))
@@ -177,6 +185,7 @@ class ResizableDragableWidget(QLabel):
         self.corner_br = Corner(self, QVector2D(1, 1))
         self.corner_bl = Corner(self, QVector2D(-1, 1))
         self.shadow = Shadow(self)
+        self.hidding_mask: Mask = None # only non-None when constructed from model
 
         for c in [self.corner_tl, self.corner_tr, self.corner_br, self.corner_bl]:
             c.resizing.connect(lambda c, shift: self.resizing.emit(self, c, shift))
@@ -184,8 +193,32 @@ class ResizableDragableWidget(QLabel):
         self.inside.moving.connect(lambda shift: self.moving.emit(self, shift))
         self.inside.moving_done.connect(lambda: self.moving_done.emit(self))
 
-    def to_model(self, id:str, ratio: float, block_span: tuple[int, int]):
-        return RDWModel(id, self.path, self.width() * ratio, (self.pos().x() * ratio, self.pos().y() * ratio), block_span)
+        self.show()
+
+    @classmethod
+    def from_model(cls, area: DrawingArea, model: RDWModel, ratio: float):
+        px = QPixmap(model.path)
+        px_ratio = px.width() / px.height()
+        # import ipdb; ipdb.set_trace()
+        height = model.width / px_ratio
+        rdw = cls(area, model.path, (model.width / ratio, height / ratio), ((model.pos[0] + 6) / ratio, (model.pos[1] + 6) / ratio))
+        # TODO: ideally i should not require ratio to be explicitely computed. creating the pixmap in the constructor with a height of 1 and KeepAspectRatioByExpanding should creates the pixmap i want. However this cannot be the only way to create a RDW, as i also need it to fit into the rectangle (pdfview.width()/10, pdfview.height()/10), and for that i need both to input width and height and use KeepAspectRatio.
+        rdw.model = model
+        rdw.hidding_mask = Mask(rdw)
+        return rdw
+
+    def remove(self):
+        self.inside.deleteLater()
+        self.corner_tl.deleteLater()
+        self.corner_tr.deleteLater()
+        self.corner_br.deleteLater()
+        self.corner_bl.deleteLater()
+        self.shadow.deleteLater()
+        self.hidding_mask.deleteLater()
+        return super().deleteLater()
+
+    def to_model(self, id:str, ratio: float):
+        return RDWModel(id, self.path, self.width() * ratio, (self.pos().x() * ratio, self.pos().y() * ratio))
 
     def adapt_components(self):
         for c in [self.corner_tl, self.corner_tr, self.corner_br, self.corner_bl]:
@@ -221,14 +254,3 @@ class ResizableDragableWidget(QLabel):
         painter.setPen(QPen(QColor('red'), border_width))
         half = border_width / 2
         painter.drawRect(QRectF(self.rect()).adjusted(half, half, -half, -half))
-
-
-class ModeledResizableDragableWidget(ResizableDragableWidget):
-    def __init__(self, area, model: RDWModel, ratio: float):
-        px = QPixmap(model.path)
-        px_ratio = px.width() / px.height()
-        # import ipdb; ipdb.set_trace()
-        height = model.width / px_ratio
-        super().__init__(area, model.path, (model.width / ratio, height / ratio), ((model.pos[0] + 6) / ratio, (model.pos[1] + 6) / ratio))
-        # TODO: ideally i should not require ratio to be explicitely computed. creating the pixmap in the constructor with a height of 1 and KeepAspectRatioByExpanding should creates the pixmap i want. However this cannot be the only way to create a RDW, as i also need it to fit into the rectangle (pdfview.width()/10, pdfview.height()/10), and for that i need both to input width and height and use KeepAspectRatio.
-        self.model = model

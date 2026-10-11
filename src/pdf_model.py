@@ -1,11 +1,13 @@
-from itertools import batched
+from itertools import batched, count
 from pathlib import Path
 import re
 from re import Match
 
 
 class RDWModel:
-    def __init__(self, id: str, path: str|Path, width: int, pos: tuple[int, int], block_span: tuple[int, int]):
+    prefix_id = 'RDW'
+
+    def __init__(self, id: str, path: str|Path, width: int, pos: tuple[int, int], block_span: tuple[int, int]|None=None):
         self.id = id
         self.path = path
         self.width = width
@@ -15,7 +17,8 @@ class RDWModel:
     @classmethod
     def from_re_match(cls, id: str, m1: Match, m2: Match):
         tex = m1.string[m1.start():m2.end()]
-        mxy = re.search(r'\[ *xshift *= *(?P<x>\d+\.\d+)* *, *yshift *= *- *(?P<y>\d+\.\d+)* *\]', tex)
+        mxy = re.search(r'\[ *xshift *= *\-? *(?P<x>\d+\.\d+) *, *yshift *= *-? *(?P<y>\d+\.\d+) *\]', tex)
+        # TODO: this regex does not capture when the position x/y are int (ie w/o "."), fix it
         mpw = re.search(r'\[width *= *(?P<width>\d+\.\d+)\w+\]{ *(?P<path>[^}]+) *}', tex)
         return cls(id=id,
                    path=Path(mpw['path']),
@@ -34,11 +37,16 @@ class RDWModel:
 
 
 class PdfModel:
-    def __init__(self, path: str|Path, rdw_models: list[RDWModel]):
+    def __init__(self, path: str|Path, end_frame_pos: int, rdw_models: list[RDWModel]):
         self.path = path
+        self.end_frame_pos = end_frame_pos
         self.rdws: list[RDWModel] = rdw_models
         # self.arrows = []
         # self.blocks = []
+
+    @property
+    def models(self):
+        return self.rdws
 
     @classmethod
     def _parse_begin_end_block(cls, m1: Match, m2: Match, ids: set) -> RDWModel|None:
@@ -58,9 +66,13 @@ class PdfModel:
         models = [cls._parse_begin_end_block(m1, m2, ids) 
                   for m1, m2 in batched(re.finditer(r'%% *BEAMER_GUI *(?P<type>\w+) *(?P<element>\w+)_(?P<id>\d+)', content), n=2)]
         rdw_models = [m for m in models if isinstance(m, RDWModel)]
-        return cls(path, rdw_models)
+        end_frame_pos = re.search(r'\\end{frame}', content).start()
+        return cls(path, end_frame_pos, rdw_models)
 
+    def find_rdw_from_id(self, id: str):
+        try: r = next(r for r in self.rdws if r.id == id)
+        except StopIteration: return
+        return r
 
-if __name__ == "__main__":
-    model = PdfModel.parse('../tex/main.tex')
-    print(model)
+    def find_new_rdw_id(self):
+        return next(f'RDW_{id}' for id in count(1) if f'RDW_{id}' not in [r.id for r in self.rdws])
