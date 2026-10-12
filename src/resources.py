@@ -34,8 +34,6 @@ class Resources(QWidget):
 
 
 class ResourceList(QScrollArea):
-    double_clicked = Signal(Path)
-
     def __init__(self):
         super().__init__()
         self.content = ResourceListContent()
@@ -50,6 +48,8 @@ class ResourceList(QScrollArea):
 
 
 class ResourceListContent(QWidget):
+    double_clicked = Signal(Path)
+
     def __init__(self):
         super().__init__()
         self.setLayout(QVBoxLayout(alignment=Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignTop))
@@ -60,6 +60,7 @@ class ResourceListContent(QWidget):
         if not im.im.pixmap().isNull():
             self.layout().addWidget(im)
             im.destroyed_resource.connect(self.rm_resource)
+            im.double_clicked.connect(self.double_clicked.emit)
 
     def rm_resource(self, resource: QWidget):
         self.layout().removeWidget(resource)
@@ -68,6 +69,7 @@ class ResourceListContent(QWidget):
 
 class ResourceThumbnail(QFrame):
     destroyed_resource = Signal(QWidget)
+    double_clicked = Signal(Path)
 
     def __init__(self, path: str|Path, scroll_area: QScrollArea):
         super().__init__()
@@ -88,7 +90,7 @@ class ResourceThumbnail(QFrame):
 
     def mouseDoubleClickEvent(self, e):
         super().mouseDoubleClickEvent(e)
-        self.scroll_area.double_clicked.emit(self.path)
+        self.double_clicked.emit(self.path)
 
     def enterEvent(self, e):
         super().enterEvent(e)

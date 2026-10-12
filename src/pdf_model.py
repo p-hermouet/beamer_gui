@@ -44,10 +44,6 @@ class PdfModel:
         # self.arrows = []
         # self.blocks = []
 
-    @property
-    def models(self):
-        return self.rdws
-
     @classmethod
     def _parse_begin_end_block(cls, m1: Match, m2: Match, ids: set) -> RDWModel|None:
         if  m1['type'] == 'BEGIN' and m2['type'] == 'END' and\

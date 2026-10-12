@@ -10,7 +10,7 @@ import tomllib
 from typing import Any, Literal, Self
 
 from PySide6.QtCore import Qt, QMargins, Signal, QMimeData, QPoint, QRect, QEvent, QRectF
-from PySide6.QtGui import QAction, QPixmap, QDrag, QPainter, QBrush, QColor, QPen, QVector2D
+from PySide6.QtGui import QAction, QPixmap, QDrag, QPainter, QBrush, QColor, QPen, QVector2D, QCursor
 from PySide6.QtPdf import QPdfDocument
 from PySide6.QtPdfWidgets import QPdfView
 from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QMenu, QStatusBar, QToolBar, QStackedLayout, QScrollArea, QSizePolicy, QFrame
@@ -64,7 +64,7 @@ class Corner(QFrame):
         event.accept()
 
     def mousePressEvent(self, event):
-        if self.area.state == 'hovering_corner':
+        if event.button() == Qt.MouseButton.LeftButton and self.area.state == 'hovering_corner':
             self.area.state = 'resizing'
             self.rdw.shadow.activate()
         event.accept()
@@ -95,6 +95,9 @@ class Inside(QFrame):
         self.setGeometry(self.rdw.pos().x() + Corner.radius, self.rdw.pos().y() + Corner.radius,
                          self.rdw.width() - 2 * Corner.radius, self.rdw.height() - 2 * Corner.radius)
 
+    def contextMenuEvent(self, ev):
+        self.rdw.context_menu.popup(QCursor.pos())
+
     def mouseMoveEvent(self, event):
         if self.area.state == 'idle':
             self.area.state = 'hovering_inside'
@@ -108,7 +111,7 @@ class Inside(QFrame):
             event.accept()
 
     def mousePressEvent(self, event):
-        if self.area.state == 'hovering_inside':
+        if event.button() == Qt.MouseButton.LeftButton and self.area.state == 'hovering_inside':
             self.area.state = 'moving'
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
             self.drag_anchor = QVector2D(event.position())
@@ -166,6 +169,7 @@ class ResizableDragableWidget(QLabel):
     resizing_done = Signal(QLabel)
     moving = Signal(QLabel, QVector2D)
     moving_done = Signal(QLabel)
+    remove_rdw = Signal(QLabel)
 
     def __init__(self, area: DrawingArea, path: str|Path, size: tuple[int, int], pos: tuple[int, int]):
         # TODO: ideally, i should not need to know that area is a DrawingArea. All use of self.area.<...> should be replaced by signals sent to the DrawingArea instance.
@@ -178,6 +182,11 @@ class ResizableDragableWidget(QLabel):
         self.setPixmap(self.px.scaled(*size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
         self.move(*pos)
         self.adjustSize()
+
+        self.context_menu = QMenu(self)
+        action = QAction('Delete', self)
+        action.triggered.connect(lambda: self.remove_rdw.emit(self))
+        self.context_menu.addAction(action)
 
         self.inside = Inside(self)
         self.corner_tl = Corner(self, QVector2D(-1, -1))
@@ -214,7 +223,8 @@ class ResizableDragableWidget(QLabel):
         self.corner_br.deleteLater()
         self.corner_bl.deleteLater()
         self.shadow.deleteLater()
-        self.hidding_mask.deleteLater()
+        if self.hidding_mask:
+            self.hidding_mask.deleteLater()
         return super().deleteLater()
 
     def to_model(self, id:str, ratio: float):
@@ -239,6 +249,9 @@ class ResizableDragableWidget(QLabel):
         self.state = 'idle'
         self.shadow.setVisible(False)
         self.setVisible(True)
+
+    def contextMenuEvent(self, ev):
+        self.context_menu.popup(QCursor.pos())
 
     def resizeEvent(self, event):
         # TODO: it never gets called, figure out why; i currently circumvent it by calling directly self.adapt_components when needed

@@ -40,11 +40,12 @@ class MainWindow(QMainWindow):
         self.pdf_view = PdfView()
         self.struc = MainStruc()
 
-        self.menu.open_tex_action.triggered.connect(self.set_tex_path)
+        self.menu.tex_opened.connect(self.set_tex_path)
         self.menu.compile_action.triggered.connect(self.compile_and_display)
         self.menu.swap_action.triggered.connect(self.swap_pdf_struc)
-        self.resources.resource_list.double_clicked.connect(self.add_resource_to_pdf)
+        self.resources.resource_list.content.double_clicked.connect(self.add_resource_to_pdf)
         self.draw_area.rdw_modified.connect(self.add_image_to_tex)
+        self.draw_area.remove_rdw.connect(self.rm_rdw)
 
         if Path(cfg['last_tex']).is_file():
             self.tex_path = Path(cfg['last_tex'])
@@ -119,3 +120,10 @@ class MainWindow(QMainWindow):
             self.tex_path.write_text(new_content)
             model = PdfModel.parse(self.tex_path)
             rdw.model = model.find_rdw_from_id(id)
+
+    def rm_rdw(self, rdw: ResizableDragableWidget):
+        model = PdfModel.parse(self.tex_path)
+        r = model.find_rdw_from_id(rdw.model.id)
+        content = self.tex_path.read_text()
+        new_content = content[:r.block_span[0]] + content[r.block_span[1]:]
+        self.tex_path.write_text(new_content)
