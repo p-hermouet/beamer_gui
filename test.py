@@ -18,6 +18,13 @@ from src.drawing_area import DrawingArea
 logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 
 
+class Shadow(QLabel):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.destroyed.connect(lambda: print(__class__.__name__, 'destroyed')) # debug
+
+
 class Corner(QFrame):
     left_clicked = Signal(int, int)
     released = Signal(int, int)
@@ -32,8 +39,8 @@ class Corner(QFrame):
         self.setMouseTracking(True)
         self.show()
 
-        self.setStyleSheet('QFrame {background-color: blue;}')
-        self.destroyed.connect(lambda: print(__class__.__name__, 'destroyed'))
+        self.setStyleSheet('QFrame {background-color: blue;}') # debug
+        self.destroyed.connect(lambda: print(__class__.__name__, 'destroyed')) # debug
 
     def mouseMoveEvent(self, event):
         self.moved.emit(*event.position().toTuple())
@@ -67,7 +74,7 @@ class Image(QLabel):
         self.setMouseTracking(True)
         self.show()
 
-        self.destroyed.connect(lambda: print(__class__.__name__, 'destroyed'))
+        self.destroyed.connect(lambda: print(__class__.__name__, 'destroyed')) # debug
 
     def mouseMoveEvent(self, ev):
         self.setCursor(Qt.CursorShape.OpenHandCursor)
@@ -102,6 +109,7 @@ class RDW(QFrame):
         self.corner_bl = Corner(self, (0, 1), self.corner_radius)
         self.corner_tr = Corner(self, (1, 0), self.corner_radius)
         self.corner_br = Corner(self, (1, 1), self.corner_radius)
+        self.shadow = Shadow(self)
 
         self.img.left_clicked.connect(lambda: self.img_left_clicked.emit(self))
         self.img.released.connect(lambda: self.img_released.emit(self))
@@ -113,8 +121,19 @@ class RDW(QFrame):
 
         self.show()
 
-        self.setStyleSheet('QFrame {background-color: pink;}')
-        self.destroyed.connect(lambda: print(__class__.__name__, 'destroyed'))
+        self.setStyleSheet('QFrame {background-color: pink;}') # debug
+        self.destroyed.connect(lambda: print(__class__.__name__, 'destroyed')) # debug
+
+    def activate_shadow(self):
+        self.shadow.setPixmap(QPixmap(self.img.pixmap()))
+        self.shadow.move(self.img.pos())
+        self.shadow.adjustSize()
+        self.shadow.setVisible(True)
+        self.img.setVisible(False)
+
+    def deactivate_shadow(self):
+        self.shadow.setVisible(False)
+        self.img.setVisible(True)
 
 
 class DrawingArea(QWidget):
@@ -129,7 +148,7 @@ class DrawingArea(QWidget):
         self.setStyleSheet('QWidget {background-color: red;}')
 
     def add_rdw(self, path: str|Path):
-        rdw = RDW(self, path, QPoint(400, 400), QPoint(400, 400))
+        rdw = RDW(self, path, QPoint(400, 200), QPoint(400, 400))
         self.rdws.append(rdw)
         rdw.corner_left_clicked.connect(self.on_corner_left_clicked)
         rdw.corner_released.connect(self.on_corner_released)
@@ -137,7 +156,7 @@ class DrawingArea(QWidget):
         rdw.img_released.connect(self.on_img_released)
         rdw.moved.connect(self.on_rdw_moved)
 
-    @property
+    @property # debug
     def status(self): return self._status
     @status.setter
     def status(self, s: str):
@@ -148,32 +167,40 @@ class DrawingArea(QWidget):
         if self.status == 'idle':
             self.rdw_selected = rdw
             self.status = 'resizing'
+            rdw.activate_shadow()
 
     def on_corner_released(self, rdw: RDW, idx: int, idy: int):
         if self.status == 'resizing':
+            print('blii')
             self.rdw_selected = None
             self.status = 'idle'
+            rdw.deactivate_shadow()
 
     def on_img_left_clicked(self, rdw: RDW):
         if self.status == 'idle':
             self.rdw_selected = rdw
             self.status = 'moving'
+            rdw.activate_shadow()
 
     def on_img_released(self, rdw: RDW):
         if self.status == 'moving':
             self.rdw_selected = None
             self.status = 'idle'
+            rdw.deactivate_shadow()
 
     def on_rdw_moved(self, rdw: RDW, x: float, y: float):
         if self.rdw_selected == rdw:
             if self.status == 'moving':
-                ...
+                # o_pos = QVector2D(rdw.img.pos())
+
+                # rdw.shadow.move()
+                print(rdw.img.pos())
             elif self.status == 'resizing':
                 ...
 
     def mouseMoveEvent(self, event):
         # if self.status == 'moving':
-        print(event.pos())
+        ...
 
 
 class MainWindow(QMainWindow):
@@ -187,10 +214,15 @@ class MainWindow(QMainWindow):
         self.addToolBar(self.menu)
 
         self.area = DrawingArea(self)
-        self.area.setLayout(QStackedLayout())
+        self.area.setLayout(QVBoxLayout())
         # self.area.add_rdw('static/pp.png')
         self.area.add_rdw('static/snow.jpg')
-        self.setCentralWidget(self.area)
+
+        self.container = QWidget()
+        self.container.setLayout(QVBoxLayout())
+        self.container.layout().addWidget(self.area, stretch=1)
+        self.container.layout().addWidget(QWidget(), stretch=1)
+        self.setCentralWidget(self.container)
 
 if __name__ == "__main__":
     app = QApplication([])
