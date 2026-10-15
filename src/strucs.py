@@ -62,10 +62,11 @@ class Sep(QFrame):
 
 
 class Struc(QFrame):
-    def __init__(self):
+    def __init__(self, parent_direc: Literal['h', 'v']):
         super().__init__()
         self.status: Literal['idle', 'resizing'] = 'idle'
-        self.direction: Literal['h', 'v'] = None
+        self.children_strucs: list[Self] = []
+        self.seps: list[Sep] = []
 
         self.setMouseTracking(True)
         self.setStyleSheet('QFrame {border: 2px dashed black;}') # TODO: replace with paintevent
@@ -82,18 +83,24 @@ class Struc(QFrame):
         self.context_menu.addAction(suppr_action)
 
     def div(self, direction: Literal['h', 'v']):
-        self.direction = direction
-        if direction == 'h':
-            self.setLayout(QHBoxLayout())
-        else:
-            self.setLayout(QVBoxLayout())
-        self.layout().setContentsMargins(0, 0, 0, 0)
-        self.layout().setSpacing(0)
-        self.sep = Sep(direction)
-        self.layout().addWidget(Struc())
-        self.layout().addWidget(self.sep)
-        self.layout().addWidget(Struc())
-        self.sep.mouse_moving.connect(self.restretch)
+        if isinstance(self.parent(), Struc):
+            if direction == 'h':
+                layout = QHBoxLayout()
+            else:
+                layout = QVBoxLayout()
+            if isinstance(self.parent().layout(), layout.__class__):
+                ... # invoke parent's method with 'layout'
+            else:
+                ... # invoke this object's method with 'layout'
+
+            # TODO: put what is below in a 'div' method and change this method's name
+                self.layout().setContentsMargins(0, 0, 0, 0)
+                self.layout().setSpacing(0)
+                self.sep = Sep(direction)
+                self.layout().addWidget(Struc())
+                self.layout().addWidget(self.sep)
+                self.layout().addWidget(Struc())
+                self.sep.mouse_moving.connect(self.restretch)
 
     def delete(self):
         print('delete') # TODO: implement this method
@@ -105,7 +112,10 @@ class Struc(QFrame):
         if self.status == 'resizing':
             x, y = self.sep.x() + pos.x(), self.sep.y() + pos.y()
             if 0 <= x <= self.width() and 0 <= y <= self.height():
-                prop = x / self.width() if self.direction == 'h' else y / self.height()
+                if isinstance(self.layout().__class__, QHBoxLayout()):
+                    prop = x / self.width()
+                else:
+                    prop = y / self.height()
                 self.layout().setStretch(0, 100)
                 self.layout().setStretch(2, round(100/prop - 100))
 
