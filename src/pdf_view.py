@@ -2,10 +2,11 @@ import logging
 from pathlib import Path
 import subprocess
 
-from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog
+from PySide6.QtCore import Qt, QMargins, Signal
+from PySide6.QtGui import QVector2D
 from PySide6.QtPdf import QPdfDocument
 from PySide6.QtPdfWidgets import QPdfView
-from PySide6.QtCore import Qt, QMargins, Signal
+from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog
 
 from src.config import cfg
 
@@ -30,6 +31,17 @@ class PdfView(QWidget):
     @property
     def doc_size(self) -> tuple[float, float]:
         return self.doc.pagePointSize(0).toTuple()
+
+    @property
+    def doc_ratio(self) -> float:
+        return self.doc_size[0] / self.doc_size[1]
+
+    @property
+    def view_size(self) -> tuple[float, float]:
+        w, h = self.view.width(), self.view.height()
+        ratio = w / h
+        return (h * self.doc_ratio, h) if self.doc_ratio <= ratio else (w, w / self.doc_ratio)
+
 
     def compile_tex(self, path: str|Path):
         if Path(path).is_file():

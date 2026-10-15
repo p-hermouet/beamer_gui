@@ -89,6 +89,7 @@ class MainWindow(QMainWindow):
         for rdw in rdws:
             rdw.hidding_mask.stackUnder(rdws[0])
             self.draw_area.add_rdw(rdw)
+        self.struc.fit_pdf(self.pdf_view.view_size)
 
     def swap_pdf_struc(self):
         if self.stack.layout().currentIndex() == 0:
