@@ -58,6 +58,7 @@ class Menu(QToolBar):
     def info_triggered(self):
         print(self.parent().struc.size())
         self.parent().struc.setStyleSheet('* {background-color: pink;}')
+        import ipdb; ipdb.set_trace()
 
     def load_pdf_triggered(self):
         window = self.parent()

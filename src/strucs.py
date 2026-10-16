@@ -26,20 +26,21 @@ class MainStruc(QWidget):
         self.setStyleSheet('QWidget {background-color: AliceBlue;}')
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(TitleStruc(), stretch=15)
-        self.layout().addWidget(Struc(), stretch=85)
+        self.layout().addWidget(BodyStruc(), stretch=85)
 
     def fit_pdf(self, size: tuple[float, float]):
         self.setFixedSize(*size)
 
 
 class Sep(QFrame):
-    thiness = 5
+    thiness = 10
     mouse_moving = Signal(QPoint)
 
     def __init__(self, direction: Literal['h', 'v']):
         super().__init__()
         self.direction = direction
 
+        self.setStyleSheet('QFrame {background-color: gray;}')
         self.setMouseTracking(True)
         if self.direction == 'h':
             self.setFixedWidth(self.thiness)
@@ -62,45 +63,65 @@ class Sep(QFrame):
 
 
 class Struc(QFrame):
-    def __init__(self, parent_direc: Literal['h', 'v']):
+    stretch_steps = 1000
+    dividing = Signal(str, QFrame)
+
+    def __init__(self):
         super().__init__()
         self.status: Literal['idle', 'resizing'] = 'idle'
-        self.children_strucs: list[Self] = []
-        self.seps: list[Sep] = []
+        self.direction: Literal['h', 'v'] = None
+        self.children_strucs: list[Self] = [] # TODO: use a property iterating over self.children instead
+        self.seps: list[Sep] = [] # TODO: use a property iterating over self.children instead
 
         self.setMouseTracking(True)
-        self.setStyleSheet('QFrame {border: 2px dashed black;}') # TODO: replace with paintevent
+        self.setObjectName('struc')
+        self.setStyleSheet('#struc {border: 2px dashed black;}') # TODO: replace with paintevent
 
+        self.init_menu()
+
+    def init_menu(self):
         self.context_menu = QMenu(self)
         h_div_action = QAction('Divide Horizontally', self)
-        h_div_action.triggered.connect(lambda: self.div('h'))
+        h_div_action.triggered.connect(lambda: self.dividing.emit('h', self))
         self.context_menu.addAction(h_div_action)
         v_div_action = QAction('Divide Vertically', self)
-        v_div_action.triggered.connect(lambda: self.div('v'))
+        v_div_action.triggered.connect(lambda: self.dividing.emit('v', self))
         self.context_menu.addAction(v_div_action)
         suppr_action = QAction('Delete', self)
         suppr_action.triggered.connect(self.delete)
         self.context_menu.addAction(suppr_action)
 
-    def div(self, direction: Literal['h', 'v']):
-        if isinstance(self.parent(), Struc):
-            if direction == 'h':
-                layout = QHBoxLayout()
-            else:
-                layout = QVBoxLayout()
-            if isinstance(self.parent().layout(), layout.__class__):
-                ... # invoke parent's method with 'layout'
-            else:
-                ... # invoke this object's method with 'layout'
+    def on_div_triggered(self, direction: Literal['h', 'v'], children: Self):
+        if direction == self.direction:
+            self.div(direction)
+        else:
+            children.div(direction)
 
-            # TODO: put what is below in a 'div' method and change this method's name
-                self.layout().setContentsMargins(0, 0, 0, 0)
-                self.layout().setSpacing(0)
-                self.sep = Sep(direction)
-                self.layout().addWidget(Struc())
-                self.layout().addWidget(self.sep)
-                self.layout().addWidget(Struc())
-                self.sep.mouse_moving.connect(self.restretch)
+    def div(self, direction: Literal['h', 'v']):
+        self.direction = direction
+
+        if not self.children_strucs:
+            layout = QHBoxLayout() if direction == 'h' else QVBoxLayout()
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.setSpacing(0)
+
+            l_struc = Struc()
+            l_struc.dividing.connect(self.on_div_triggered)
+            self.children_strucs.append(l_struc)
+            layout.addWidget(l_struc)
+
+            self.setLayout(layout)
+
+        sep = Sep(direction)
+        sep.mouse_moving.connect(self.restretch)
+        self.seps.append(sep)
+        self.layout().addWidget(sep)
+
+        r_struc = Struc()
+        r_struc.dividing.connect(self.on_div_triggered)
+        self.children_strucs.append(r_struc)
+        self.layout().addWidget(r_struc)
+
 
     def delete(self):
         print('delete') # TODO: implement this method
@@ -117,7 +138,18 @@ class Struc(QFrame):
                 else:
                     prop = y / self.height()
                 self.layout().setStretch(0, 100)
-                self.layout().setStretch(2, round(100/prop - 100))
+                self.layout().setStretch(2, round(100/prop - 100)) # TODO: change that so the streches' sum is 1000
+
+
+class BodyStruc(Struc):
+    def init_menu(self):
+        self.context_menu = QMenu(self)
+        h_div_action = QAction('Divide Horizontally', self)
+        h_div_action.triggered.connect(lambda: self.div('h'))
+        self.context_menu.addAction(h_div_action)
+        v_div_action = QAction('Divide Vertically', self)
+        v_div_action.triggered.connect(lambda: self.div('v'))
+        self.context_menu.addAction(v_div_action)
 
 
 class TitleStruc(QLabel):
