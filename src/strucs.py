@@ -34,7 +34,7 @@ class MainStruc(QWidget):
 
 class Sep(QFrame):
     thiness = 10
-    mouse_moving = Signal(QPoint)
+    mouse_moving = Signal(QPoint, QFrame)
 
     def __init__(self, direction: Literal['h', 'v']):
         super().__init__()
@@ -52,7 +52,7 @@ class Sep(QFrame):
             self.setCursor(Qt.CursorShape.SplitHCursor)
         else:
             self.setCursor(Qt.CursorShape.SplitVCursor)
-        self.mouse_moving.emit(event.pos())
+        self.mouse_moving.emit(event.pos(), self)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -70,8 +70,6 @@ class Struc(QFrame):
         super().__init__()
         self.status: Literal['idle', 'resizing'] = 'idle'
         self.direction: Literal['h', 'v'] = None
-        self.children_strucs: list[Self] = [] # TODO: use a property iterating over self.children instead
-        self.seps: list[Sep] = [] # TODO: use a property iterating over self.children instead
 
         self.setMouseTracking(True)
         self.setObjectName('struc')
@@ -91,37 +89,49 @@ class Struc(QFrame):
         suppr_action.triggered.connect(self.delete)
         self.context_menu.addAction(suppr_action)
 
-    def on_div_triggered(self, direction: Literal['h', 'v'], children: Self):
-        if direction == self.direction:
-            self.div(direction)
-        else:
-            children.div(direction)
+    @property
+    def children_strucs(self):
+        return [self.layout().itemAt(i).widget() for i in range(self.layout().count())
+                if isinstance(self.layout().itemAt(i).widget(), __class__)]
 
-    def div(self, direction: Literal['h', 'v']):
-        self.direction = direction
+    @property
+    def seps(self):
+        return [self.layout().itemAt(i).widget() for i in range(self.layout().count())
+                if isinstance(self.layout().itemAt(i).widget(), Sep)]
 
-        if not self.children_strucs:
-            layout = QHBoxLayout() if direction == 'h' else QVBoxLayout()
-            layout.setContentsMargins(0, 0, 0, 0)
-            layout.setSpacing(0)
+    def add_child_struc(self, stretch: int, index:int = -1):
+        struc = Struc()
+        struc.dividing.connect(self.on_div_triggered)
+        self.layout().insertWidget(index, struc, stretch)
 
-            l_struc = Struc()
-            l_struc.dividing.connect(self.on_div_triggered)
-            self.children_strucs.append(l_struc)
-            layout.addWidget(l_struc)
-
-            self.setLayout(layout)
-
+    def add_step(self, direction: Literal['h', 'v'], index: int=-1):
         sep = Sep(direction)
         sep.mouse_moving.connect(self.restretch)
-        self.seps.append(sep)
-        self.layout().addWidget(sep)
+        self.layout().insertWidget(index, sep)
 
-        r_struc = Struc()
-        r_struc.dividing.connect(self.on_div_triggered)
-        self.children_strucs.append(r_struc)
-        self.layout().addWidget(r_struc)
+    def first_div(self, direction: Literal['h', 'v']):
+        self.direction = direction
+        layout = QHBoxLayout() if direction == 'h' else QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        self.setLayout(layout)
 
+        self.add_child_struc(self.stretch_steps // 2)
+        self.add_step(direction)
+        self.add_child_struc(self.stretch_steps // 2)
+
+    def new_div(self, direction: Literal['h', 'v'], child: Self):
+        idx = self.layout().indexOf(child)
+        stretch = self.layout().stretch(idx)
+        self.add_step(direction, index=idx)
+        self.layout().setStretchFactor(child, stretch // 2)
+        self.add_child_struc(stretch - stretch // 2, index=idx)
+
+    def on_div_triggered(self, direction: Literal['h', 'v'], child: Self):
+        if direction == self.direction:
+            self.new_div(direction, child)
+        else:
+            child.first_div(direction)
 
     def delete(self):
         print('delete') # TODO: implement this method
@@ -129,26 +139,31 @@ class Struc(QFrame):
     def contextMenuEvent(self, event):
         self.context_menu.popup(QCursor.pos())
 
-    def restretch(self, pos: QPoint):
+    def restretch(self, pos: QPoint, sep: Sep):
         if self.status == 'resizing':
-            x, y = self.sep.x() + pos.x(), self.sep.y() + pos.y()
-            if 0 <= x <= self.width() and 0 <= y <= self.height():
-                if isinstance(self.layout().__class__, QHBoxLayout()):
-                    prop = x / self.width()
+            idx = self.seps.index(sep)
+            l_struc = self.children_strucs[idx]
+            r_struc = self.children_strucs[idx + 1]
+            x, y = sep.x() + pos.x(), sep.y() + pos.y()
+            if l_struc.x() <= x <= r_struc.x() + r_struc.width() and l_struc.y() <= y <= r_struc.y() + r_struc.height():
+                if self.direction == 'h':
+                    prop = (x - l_struc.x()) / (l_struc.width() + r_struc.width())
                 else:
-                    prop = y / self.height()
-                self.layout().setStretch(0, 100)
-                self.layout().setStretch(2, round(100/prop - 100)) # TODO: change that so the streches' sum is 1000
+                    prop = (y - l_struc.y()) / (l_struc.height() + r_struc.height())
+                tot_stretch = self.layout().stretch(self.layout().indexOf(l_struc)) +\
+                    self.layout().stretch(self.layout().indexOf(r_struc))
+                self.layout().setStretchFactor(l_struc, int(tot_stretch * prop))
+                self.layout().setStretchFactor(r_struc, tot_stretch - int(tot_stretch * prop))
 
 
 class BodyStruc(Struc):
     def init_menu(self):
         self.context_menu = QMenu(self)
         h_div_action = QAction('Divide Horizontally', self)
-        h_div_action.triggered.connect(lambda: self.div('h'))
+        h_div_action.triggered.connect(lambda: self.first_div('h'))
         self.context_menu.addAction(h_div_action)
         v_div_action = QAction('Divide Vertically', self)
-        v_div_action.triggered.connect(lambda: self.div('v'))
+        v_div_action.triggered.connect(lambda: self.first_div('v'))
         self.context_menu.addAction(v_div_action)
 
 
