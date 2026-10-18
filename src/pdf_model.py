@@ -2,6 +2,20 @@ from itertools import batched, count
 from pathlib import Path
 import re
 from re import Match
+from typing import Self
+
+
+class StrucModel:
+    prefix_id = 'DEFAULT_STRUC'
+
+    def __init__(self, id: str, children: list[Self], block_span: tuple[int, int]):
+        self.id = id
+        self.children = children
+        self.block_span = block_span
+
+    @classmethod
+    def from_re_match(cls, m1: Match, m2: Match):
+        tex = m1.string[m1.start():m2.end()]
 
 
 class RDWModel:
@@ -50,10 +64,13 @@ class PdfModel:
             m1['element'] == m2['element'] and\
             m1['id'] == m2['id'] and (id := f'{m1["element"]}_{m1["id"]}') not in ids:
 
-            if m1['element'] in ['RDW']:
+            if m1['element'] in [RDWModel.prefix_id, StrucModel.prefix_id]:
                 ids.add(id)
-                if m1['element'] == 'RDW':
-                    return RDWModel.from_re_match(id, m1, m2)
+                match m1['element']:
+                    case RDWModel.prefix_id:
+                        return RDWModel.from_re_match(id, m1, m2)
+                    case StrucModel.prefix_id:
+                        return StrucModel.from_re_match(id, m1, m2)
 
     @classmethod
     def parse(cls, path: str|Path):

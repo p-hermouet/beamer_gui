@@ -129,6 +129,9 @@ class Struc(QFrame):
         self.layout().setStretchFactor(child, stretch // 2)
         self.add_child_struc(stretch - stretch // 2, index=idx)
 
+    def to_tex(self):
+        ...
+
     def on_div_triggered(self, direction: Literal['h', 'v'], child: Self):
         if direction == self.direction:
             self.new_div(direction, child)
