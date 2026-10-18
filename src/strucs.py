@@ -65,6 +65,7 @@ class Sep(QFrame):
 class Struc(QFrame):
     stretch_steps = 1000
     dividing = Signal(str, QFrame)
+    removing = Signal(QFrame)
 
     def __init__(self):
         super().__init__()
@@ -102,6 +103,7 @@ class Struc(QFrame):
     def add_child_struc(self, stretch: int, index:int = -1):
         struc = Struc()
         struc.dividing.connect(self.on_div_triggered)
+        struc.removing.connect(self.on_del_triggered)
         self.layout().insertWidget(index, struc, stretch)
 
     def add_step(self, direction: Literal['h', 'v'], index: int=-1):
@@ -133,8 +135,29 @@ class Struc(QFrame):
         else:
             child.first_div(direction)
 
+    def on_del_triggered(self, child: Self):
+        if len(self.children_strucs) == 1:
+            child.deleteLater()
+        else:
+            idx = self.children_strucs.index(child)
+            if idx == 0:
+                ngb = self.children_strucs[idx + 1]
+            else:
+                ngb = self.children_strucs[idx - 1]
+            stretch1 = self.layout().stretch(self.layout().indexOf(child))
+            stretch2 = self.layout().stretch(self.layout().indexOf(ngb))
+            child.deleteLater()
+            self.layout().setStretchFactor(ngb, stretch1 + stretch2)
+
+            if idx == 0:
+                sep = self.seps[idx]
+            else:
+                sep = self.seps[idx - 1]
+            sep.deleteLater()
+
+
     def delete(self):
-        print('delete') # TODO: implement this method
+        self.removing.emit(self)
 
     def contextMenuEvent(self, event):
         self.context_menu.popup(QCursor.pos())
