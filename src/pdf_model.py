@@ -5,6 +5,14 @@ from re import Match
 from typing import Self
 
 
+def reg(expr: str):
+    return expr.replace(r'\[', r' \[ ').replace(r'\]', r' \] ').\
+            replace(r'\(', r' \( ').replace(r'\)', r' \) ').\
+            replace(r'{', r' { ').replace(r'}', r' } ').\
+            replace('=', ' = ').replace('-?', ' -? ').replace(',', ' , ').\
+            replace(' ', r' *').replace(r'\F', r'\d+(.\d+)?')
+
+
 class StrucModel:
     prefix_id = 'DEFAULT_STRUC'
 
@@ -31,9 +39,9 @@ class RDWModel:
     @classmethod
     def from_re_match(cls, id: str, m1: Match, m2: Match):
         tex = m1.string[m1.start():m2.end()]
-        mxy = re.search(r'\[ *xshift *= *\-? *(?P<x>\d+\.\d+) *, *yshift *= *-? *(?P<y>\d+\.\d+) *\]', tex)
+        mxy = re.search(reg(r'\[xshift=-?(?P<x>\F),yshift=-?(?P<y>\F)\]'), tex)
         # TODO: this regex does not capture when the position x/y are int (ie w/o "."), fix it
-        mpw = re.search(r'\[width *= *(?P<width>\d+\.\d+)\w+\]{ *(?P<path>[^}]+) *}', tex)
+        mpw = re.search(reg(r'\[width=(?P<width>\F)\w+\]{(?P<path>[^}]+)}'), tex)
         return cls(id=id,
                    path=Path(mpw['path']),
                    width=float(mpw['width']),
@@ -77,10 +85,14 @@ class PdfModel:
         content = Path(path).read_text()
         ids = set()
         models = [cls._parse_begin_end_block(m1, m2, ids) 
-                  for m1, m2 in batched(re.finditer(r'%% *BEAMER_GUI *(?P<type>\w+) *(?P<element>\w+)_(?P<id>\d+)', content), n=2)]
+                    for m1, m2 in batched(re.finditer(reg(r'%% BEAMER_GUI (?P<type>\w+) (?P<element>\w+)_(?P<id>\d+)'), content), n=2)]
         rdw_models = [m for m in models if isinstance(m, RDWModel)]
         end_frame_pos = re.search(r'\\end{frame}', content).start()
         return cls(path, end_frame_pos, rdw_models)
+
+    # @classmethod
+    # def parse_v2(cls, path: str|Path):
+    #     content = Path(path).read_text()
 
     def find_rdw_from_id(self, id: str):
         try: r = next(r for r in self.rdws if r.id == id)
