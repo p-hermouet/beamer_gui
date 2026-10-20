@@ -6,11 +6,14 @@ from typing import Self
 
 
 def reg(expr: str):
+    ''' Modifies a regex expression so that it captures any space around symbols `()[]{}=,-`, and defines `\\F` as a pattern for `int or float`.
+    '''
     return expr.replace(r'\[', r' \[ ').replace(r'\]', r' \] ').\
             replace(r'\(', r' \( ').replace(r'\)', r' \) ').\
             replace(r'{', r' { ').replace(r'}', r' } ').\
             replace('=', ' = ').replace('-?', ' -? ').replace(',', ' , ').\
-            replace(' ', r' *').replace(r'\F', r'\d+(.\d+)?')
+            replace(' ', r' *').\
+            replace(r'\F', r'\d+(?:\.\d+)?')
 
 
 class StrucModel:
@@ -28,6 +31,8 @@ class StrucModel:
 
 class RDWModel:
     prefix_id = 'RDW'
+    pos_pattern = reg(r'\[xshift=-?(?P<x>\F),yshift=-?(?P<y>\F)\]')
+    width_path_pattern = reg(r'\[width=(?P<width>\F)\w+\]{(?P<path>[^}]+)}')
 
     def __init__(self, id: str, path: str|Path, width: int, pos: tuple[int, int], block_span: tuple[int, int]|None=None):
         self.id = id
@@ -39,9 +44,9 @@ class RDWModel:
     @classmethod
     def from_re_match(cls, id: str, m1: Match, m2: Match):
         tex = m1.string[m1.start():m2.end()]
-        mxy = re.search(reg(r'\[xshift=-?(?P<x>\F),yshift=-?(?P<y>\F)\]'), tex)
+        mxy = re.search(cls.pos_pattern, tex)
         # TODO: this regex does not capture when the position x/y are int (ie w/o "."), fix it
-        mpw = re.search(reg(r'\[width=(?P<width>\F)\w+\]{(?P<path>[^}]+)}'), tex)
+        mpw = re.search(cls.width_path_pattern, tex)
         return cls(id=id,
                    path=Path(mpw['path']),
                    width=float(mpw['width']),
@@ -101,3 +106,28 @@ class PdfModel:
 
     def find_new_rdw_id(self):
         return next(f'RDW_{id}' for id in count(1) if f'RDW_{id}' not in [r.id for r in self.rdws])
+
+
+class PdfModel2:
+    begin_block_patter = reg(r'%% BEAMER_GUI BEGIN (\w+)_(\d+)')
+    end_block_patter = reg('%% BEAMER_GUI END {id}')
+
+    def __init__(self, path: str|Path):
+        self.path = Path(path)
+        self.content = self.path.read_text()
+
+    def find_next_block(self, start: int):
+        m1 = re.search(self.begin_block_patter, self.content[start:])
+        if len(m1.groups()) != 2:
+            ... # raise parsing error
+        pid, nid = m1
+        m2 = re.search(self.end_block_patter.format(id=f'{pid}_{nid}'), self.content[start:])
+        if not m2:
+            ... # raise parsing error
+        match pid:
+            case RDWModel.prefix_id:
+                ...
+            case StrucModel.prefix_id:
+                ...
+            case _:
+                ... # raise parsing error

@@ -1,0 +1,411 @@
+{
+  "nodelist": [
+    {
+      "nodetype": "LatexMacroNode",
+      "pos": 0,
+      "len": 39,
+      "macroname": "documentclass",
+      "nodeargd": {
+        "argspec": "[{",
+        "argnlist": [
+          {
+            "nodetype": "LatexGroupNode",
+            "pos": 14,
+            "len": 17,
+            "nodelist": [
+              {
+                "nodetype": "LatexCharsNode",
+                "pos": 15,
+                "len": 15,
+                "chars": "aspectratio=169",
+                "lineno": 1,
+                "colno": 15
+              }
+            ],
+            "delimiters": [
+              "[",
+              "]"
+            ],
+            "lineno": 1,
+            "colno": 14
+          },
+          {
+            "nodetype": "LatexGroupNode",
+            "pos": 31,
+            "len": 8,
+            "nodelist": [
+              {
+                "nodetype": "LatexCharsNode",
+                "pos": 32,
+                "len": 6,
+                "chars": "beamer",
+                "lineno": 1,
+                "colno": 32
+              }
+            ],
+            "delimiters": [
+              "{",
+              "}"
+            ],
+            "lineno": 1,
+            "colno": 31
+          }
+        ]
+      },
+      "macro_post_space": "",
+      "lineno": 1,
+      "colno": 0
+    },
+    {
+      "nodetype": "LatexCharsNode",
+      "pos": 39,
+      "len": 1,
+      "chars": "\n",
+      "lineno": 1,
+      "colno": 39
+    },
+    {
+      "nodetype": "LatexMacroNode",
+      "pos": 40,
+      "len": 17,
+      "macroname": "usepackage",
+      "nodeargd": {
+        "argspec": "[{",
+        "argnlist": [
+          null,
+          {
+            "nodetype": "LatexGroupNode",
+            "pos": 51,
+            "len": 6,
+            "nodelist": [
+              {
+                "nodetype": "LatexCharsNode",
+                "pos": 52,
+                "len": 4,
+                "chars": "tikz",
+                "lineno": 2,
+                "colno": 12
+              }
+            ],
+            "delimiters": [
+              "{",
+              "}"
+            ],
+            "lineno": 2,
+            "colno": 11
+          }
+        ]
+      },
+      "macro_post_space": "",
+      "lineno": 2,
+      "colno": 0
+    },
+    {
+      "nodetype": "LatexCharsNode",
+      "pos": 57,
+      "len": 2,
+      "chars": "\n\n",
+      "lineno": 2,
+      "colno": 17
+    },
+    {
+      "nodetype": "LatexEnvironmentNode",
+      "pos": 59,
+      "len": 410,
+      "environmentname": "document",
+      "nodelist": [
+        {
+          "nodetype": "LatexCharsNode",
+          "pos": 75,
+          "len": 2,
+          "chars": "\n\n",
+          "lineno": 4,
+          "colno": 16
+        },
+        {
+          "nodetype": "LatexEnvironmentNode",
+          "pos": 77,
+          "len": 376,
+          "environmentname": "frame",
+          "nodelist": [
+            {
+              "nodetype": "LatexCharsNode",
+              "pos": 90,
+              "len": 1,
+              "chars": "\n",
+              "lineno": 6,
+              "colno": 13
+            },
+            {
+              "nodetype": "LatexMacroNode",
+              "pos": 91,
+              "len": 11,
+              "macroname": "frametitle",
+              "nodeargd": {
+                "argspec": "",
+                "argnlist": []
+              },
+              "macro_post_space": "",
+              "lineno": 7,
+              "colno": 0
+            },
+            {
+              "nodetype": "LatexGroupNode",
+              "pos": 102,
+              "len": 14,
+              "nodelist": [
+                {
+                  "nodetype": "LatexCharsNode",
+                  "pos": 103,
+                  "len": 12,
+                  "chars": "Introduction",
+                  "lineno": 7,
+                  "colno": 12
+                }
+              ],
+              "delimiters": [
+                "{",
+                "}"
+              ],
+              "lineno": 7,
+              "colno": 11
+            },
+            {
+              "nodetype": "LatexCharsNode",
+              "pos": 116,
+              "len": 2,
+              "chars": "\n\n",
+              "lineno": 7,
+              "colno": 25
+            },
+            {
+              "nodetype": "LatexMathNode",
+              "pos": 118,
+              "len": 25,
+              "displaytype": "inline",
+              "nodelist": [
+                {
+                  "nodetype": "LatexCharsNode",
+                  "pos": 119,
+                  "len": 4,
+                  "chars": "SIS ",
+                  "lineno": 9,
+                  "colno": 1
+                },
+                {
+                  "nodetype": "LatexMacroNode",
+                  "pos": 123,
+                  "len": 16,
+                  "macroname": "longrightarrow",
+                  "nodeargd": {
+                    "argspec": "",
+                    "argnlist": []
+                  },
+                  "macro_post_space": " ",
+                  "lineno": 9,
+                  "colno": 5
+                },
+                {
+                  "nodetype": "LatexCharsNode",
+                  "pos": 139,
+                  "len": 3,
+                  "chars": "LWE",
+                  "lineno": 9,
+                  "colno": 21
+                }
+              ],
+              "delimiters": [
+                "$",
+                "$"
+              ],
+              "lineno": 9,
+              "colno": 0
+            },
+            {
+              "nodetype": "LatexCharsNode",
+              "pos": 143,
+              "len": 2,
+              "chars": "\n\n",
+              "lineno": 9,
+              "colno": 25
+            },
+            {
+              "nodetype": "LatexCommentNode",
+              "pos": 145,
+              "len": 26,
+              "comment": "% BEAMER_GUI BEGIN RDW_1",
+              "comment_post_space": "\n",
+              "lineno": 11,
+              "colno": 0
+            },
+            {
+              "nodetype": "LatexEnvironmentNode",
+              "pos": 171,
+              "len": 239,
+              "environmentname": "tikzpicture",
+              "nodelist": [
+                {
+                  "nodetype": "LatexCharsNode",
+                  "pos": 190,
+                  "len": 30,
+                  "chars": "[remember picture, overlay]\n  ",
+                  "lineno": 12,
+                  "colno": 19
+                },
+                {
+                  "nodetype": "LatexMacroNode",
+                  "pos": 220,
+                  "len": 5,
+                  "macroname": "node",
+                  "nodeargd": {
+                    "argspec": "",
+                    "argnlist": []
+                  },
+                  "macro_post_space": "",
+                  "lineno": 13,
+                  "colno": 2
+                },
+                {
+                  "nodetype": "LatexCharsNode",
+                  "pos": 225,
+                  "len": 103,
+                  "chars": "[anchor=north west] at ([xshift=153.3359914439348, yshift=-144.5536927029305] current page.north west) ",
+                  "lineno": 13,
+                  "colno": 7
+                },
+                {
+                  "nodetype": "LatexGroupNode",
+                  "pos": 328,
+                  "len": 63,
+                  "nodelist": [
+                    {
+                      "nodetype": "LatexMacroNode",
+                      "pos": 329,
+                      "len": 61,
+                      "macroname": "includegraphics",
+                      "nodeargd": {
+                        "argspec": "[{",
+                        "argnlist": [
+                          {
+                            "nodetype": "LatexGroupNode",
+                            "pos": 345,
+                            "len": 28,
+                            "nodelist": [
+                              {
+                                "nodetype": "LatexCharsNode",
+                                "pos": 346,
+                                "len": 26,
+                                "chars": "width=195.71980051380967pt",
+                                "lineno": 13,
+                                "colno": 128
+                              }
+                            ],
+                            "delimiters": [
+                              "[",
+                              "]"
+                            ],
+                            "lineno": 13,
+                            "colno": 127
+                          },
+                          {
+                            "nodetype": "LatexGroupNode",
+                            "pos": 373,
+                            "len": 17,
+                            "nodelist": [
+                              {
+                                "nodetype": "LatexCharsNode",
+                                "pos": 374,
+                                "len": 15,
+                                "chars": "static/snow.jpg",
+                                "lineno": 13,
+                                "colno": 156
+                              }
+                            ],
+                            "delimiters": [
+                              "{",
+                              "}"
+                            ],
+                            "lineno": 13,
+                            "colno": 155
+                          }
+                        ]
+                      },
+                      "macro_post_space": "",
+                      "lineno": 13,
+                      "colno": 111
+                    }
+                  ],
+                  "delimiters": [
+                    "{",
+                    "}"
+                  ],
+                  "lineno": 13,
+                  "colno": 110
+                },
+                {
+                  "nodetype": "LatexCharsNode",
+                  "pos": 391,
+                  "len": 2,
+                  "chars": ";\n",
+                  "lineno": 13,
+                  "colno": 173
+                }
+              ],
+              "nodeargd": {
+                "argspec": "",
+                "argnlist": []
+              },
+              "lineno": 12,
+              "colno": 0
+            },
+            {
+              "nodetype": "LatexCharsNode",
+              "pos": 410,
+              "len": 1,
+              "chars": "\n",
+              "lineno": 14,
+              "colno": 17
+            },
+            {
+              "nodetype": "LatexCommentNode",
+              "pos": 411,
+              "len": 23,
+              "comment": "% BEAMER_GUI END RDW_1",
+              "comment_post_space": "",
+              "lineno": 15,
+              "colno": 0
+            },
+            {
+              "nodetype": "LatexCharsNode",
+              "pos": 434,
+              "len": 8,
+              "chars": "\n\n\n\n\n\n\n\n",
+              "lineno": 15,
+              "colno": 23
+            }
+          ],
+          "nodeargd": {
+            "argspec": "",
+            "argnlist": []
+          },
+          "lineno": 6,
+          "colno": 0
+        },
+        {
+          "nodetype": "LatexCharsNode",
+          "pos": 453,
+          "len": 2,
+          "chars": "\n\n",
+          "lineno": 23,
+          "colno": 11
+        }
+      ],
+      "nodeargd": {
+        "argspec": "",
+        "argnlist": []
+      },
+      "lineno": 4,
+      "colno": 0
+    }
+  ]
+}
