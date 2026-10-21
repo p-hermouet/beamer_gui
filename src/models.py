@@ -1,88 +1,11 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from itertools import batched, count
 from pathlib import Path
 import re
 from re import Match
 from typing import Self, Generator
-
-
-# class RDWModel:
-#     prefix_id = 'RDW'
-#     pos_pattern = reg(r'\[xshift=-?(?P<x>\F),yshift=-?(?P<y>\F)\]')
-#     width_path_pattern = reg(r'\[width=(?P<width>\F)\w+\]{(?P<path>[^}]+)}')
-
-#     def __init__(self, id: str, path: str|Path, width: int, pos: tuple[int, int], block_span: tuple[int, int]|None=None):
-#         self.id = id
-#         self.path = path
-#         self.width = width
-#         self.pos = pos
-#         self.block_span = block_span
-
-#     @classmethod
-#     def from_re_match(cls, id: str, m1: Match, m2: Match):
-#         tex = m1.string[m1.start():m2.end()]
-#         mxy = re.search(cls.pos_pattern, tex)
-#         # TODO: this regex does not capture when the position x/y are int (ie w/o "."), fix it
-#         mpw = re.search(cls.width_path_pattern, tex)
-#         return cls(id=id,
-#                    path=Path(mpw['path']),
-#                    width=float(mpw['width']),
-#                    pos=(float(mxy['x']), float(mxy['y'])),
-#                    block_span=(m1.start(), m2.end()))
-
-#     def to_tex(self) -> str:
-#         (x, y), width, path = self.pos, self.width, self.path
-#         return  (rf'%% BEAMER_GUI BEGIN {self.id}' + '\n'
-#                 rf'\begin{{tikzpicture}}[remember picture, overlay]' + '\n'
-#                 rf'  \node[anchor=north west] at ([xshift={x - 6}, yshift=-{y - 6}] current page.north west) {{\includegraphics[width={width}pt]{{{path}}}}};' + '\n'
-#                 rf'\end{{tikzpicture}}' + '\n'
-#                 f'%% BEAMER_GUI END {self.id}')
-#         # TODO: this -6 in the template file should be investigated (plus, it's not 100% precise)
-
-
-# class PdfModel:
-#     def __init__(self, path: str|Path, end_frame_pos: int, rdw_models: list[RDWModel]):
-#         self.path = path
-#         self.end_frame_pos = end_frame_pos
-#         self.rdws: list[RDWModel] = rdw_models
-#         # self.arrows = []
-#         # self.blocks = []
-
-#     @classmethod
-#     def _parse_begin_end_block(cls, m1: Match, m2: Match, ids: set) -> RDWModel|None:
-#         if  m1['type'] == 'BEGIN' and m2['type'] == 'END' and\
-#             m1['element'] == m2['element'] and\
-#             m1['id'] == m2['id'] and (id := f'{m1["element"]}_{m1["id"]}') not in ids:
-
-#             if m1['element'] in [RDWModel.prefix_id, StrucModel.prefix_id]:
-#                 ids.add(id)
-#                 match m1['element']:
-#                     case RDWModel.prefix_id:
-#                         return RDWModel.from_re_match(id, m1, m2)
-#                     case StrucModel.prefix_id:
-#                         return StrucModel.from_re_match(id, m1, m2)
-
-#     @classmethod
-#     def parse(cls, path: str|Path):
-#         content = Path(path).read_text()
-#         ids = set()
-#         models = [cls._parse_begin_end_block(m1, m2, ids) 
-#                     for m1, m2 in batched(re.finditer(reg(r'%% BEAMER_GUI (?P<type>\w+) (?P<element>\w+)_(?P<id>\d+)'), content), n=2)]
-#         rdw_models = [m for m in models if isinstance(m, RDWModel)]
-#         end_frame_pos = re.search(r'\\end{frame}', content).start()
-#         return cls(path, end_frame_pos, rdw_models)
-
-#     # @classmethod
-#     # def parse_v2(cls, path: str|Path):
-#     #     content = Path(path).read_text()
-
-#     def find_rdw_from_id(self, id: str):
-#         try: r = next(r for r in self.rdws if r.id == id)
-#         except StopIteration: return
-#         return r
-
-#     def find_new_rdw_id(self):
-#         return next(f'RDW_{id}' for id in count(1) if f'RDW_{id}' not in [r.id for r in self.rdws])
 
 
 def reg(expr: str):
@@ -94,10 +17,13 @@ def reg(expr: str):
             replace('=', ' = ').replace('-?', ' -? ').replace(',', ' , ').\
             replace(' ', r' *').\
             replace(r'\F', r'\d+(?:\.\d+)?')
+    # TODO: add pattern to not capture comments
 
 
 @dataclass
 class Block:
+    template_path = Path('templates/block.template')
+
     start: int
     end: int
     start_content: int
@@ -111,9 +37,14 @@ class Block:
     def id(self):
         return f'{self.pid}_{self.nid}'
 
+    @classmethod
+    def tex(cls, id: str, content: str):
+        return Path(cls.template_path).read_text().format(id=id, content=content)
+
 
 class Model:
     template_path: str|Path
+    pid: str
 
     def to_tex(self, **kwargs):
         content = Path(self.template_path).read_text()
@@ -121,9 +52,10 @@ class Model:
 
 
 @dataclass
-class RDWModel:
+class RDWModel(Model):
     template_path = Path('templates/rdw.template')
     pid = 'RDW'
+
     pos_pattern = reg(r'\[xshift=-?(?P<x>\F),yshift=-?(?P<y>\F)\]')
     width_path_pattern = reg(r'\[width=(?P<width>\F)\w+\]{(?P<path>[^}]+)}')
 
@@ -139,6 +71,9 @@ class RDWModel:
                     width=float(mpw['width']),
                     pos=(float(mxy['x']), float(mxy['y'])))
 
+    def to_tex(self):
+        return super().to_tex(x=self.pos[0], y=self.pos[1], width=self.width, path=self.path)
+
 
 class EmptyStrucModel:
     template_path = ...
@@ -153,13 +88,15 @@ class EmptyStrucModel:
 
 class FrameParser:
     begin_block_pattern = reg(r'%% BEAMER_GUI BEGIN (\w+)_(\d+)')
-    end_block_pattern = reg('%% BEAMER_GUI END {id}')
+    end_block_pattern = '%% BEAMER_GUI END {id}'
+    end_frame_pattern = reg(r'\\end{frame}')
 
     def __init__(self, path: str|Path):
         self.path = Path(path)
         self.content = self.path.read_text()
+        self.end = re.search(self.end_frame_pattern, self.content).start()
         self.blocks: list[Block] = []
-        self.parse()
+        self.blocks = self.parse()
 
     def walk_blocks(self, block: Block|None = None) -> Generator[Block]:
         if not block:
@@ -172,15 +109,15 @@ class FrameParser:
         if m1:
             if len(m1.groups()) != 2:
                 ... # TODO: raise parsing error
-            pid, nid = m1
+            pid, nid = m1.groups()
             m2 = re.search(self.end_block_pattern.format(id=f'{pid}_{nid}'), self.content[start:])
             if not m2:
                 ... # TODO: raise parsing error
-            return Block(m1.start + start,
-                        m2.end + start,
-                        m1.end + start,
-                        m2.start + start,
-                        self.content[m1.start + start:m2.end + start],
+            return Block(m1.start() + start,
+                        m2.end() + start,
+                        m1.end() + start,
+                        m2.start() + start,
+                        self.content[m1.start() + start:m2.end() + start],
                         pid,
                         nid,
                         [])
@@ -198,10 +135,10 @@ class FrameParser:
 
     def find_block_from_id(self, id: str) -> Block:
         try:
-            r = next(b for b in self.blocks if b.id == id)
+            r = next(b for b in self.walk_blocks() if b.id == id)
         except StopIteration:
             return
         return r
 
-    def new_id(self, elem: type[Block]) -> str:
-        return next(f'{elem.pid}_{id}' for id in count(1) if f'{elem.pid}_{id}' not in [b.id for b in self.blocks])
+    def new_id(self, elem: type[Model]) -> str:
+        return next(f'{elem.pid}_{id}' for id in count(1) if f'{elem.pid}_{id}' not in [b.id for b in self.walk_blocks()])

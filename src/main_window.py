@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, Q
 from src.config import cfg
 from src.drawing_area import DrawingArea
 from src.menu import Menu
-from src.models import FrameParser, RDWModel
+from src.models import Block, FrameParser, RDWModel
 from src.pdf_view import PdfView
 from src.resources import Resources
 from src.rdw import ResizableDragableWidget, Mask
@@ -83,10 +83,10 @@ class MainWindow(QMainWindow):
         self.pdf_view.compile_tex(self.tex_path)
         self.pdf_view.display()
         self.draw_area.clear()
-        
-        model = PdfModel.parse(self.tex_path)
+        parser = FrameParser(self.tex_path)
         ratio = self.pdf_view.doc_size[0] / self.pdf_view.view.size().width()
-        rdws = [ResizableDragableWidget.from_model(self.draw_area, m_rdw, ratio) for m_rdw in model.rdws]
+        rdws = [ResizableDragableWidget.from_block(self.draw_area, b, ratio)
+                for b in parser.blocks if b.pid == RDWModel.pid]
         for rdw in rdws:
             rdw.hidding_mask.stackUnder(rdws[0])
             self.draw_area.add_rdw(rdw)
@@ -105,27 +105,27 @@ class MainWindow(QMainWindow):
 
     def add_image_to_tex(self, rdw: ResizableDragableWidget):
         # TODO: change this function: temporary one; i think parts of it must be in PdfModel
-        model = PdfModel.parse(self.tex_path)
+        parser = FrameParser(self.tex_path)
         ratio = self.pdf_view.doc_size[0] / self.pdf_view.view.size().width()
         content = self.tex_path.read_text()
-        if rdw.model:
-            r = model.find_rdw_from_id(rdw.model.id)
-            if not r:
-                return
-            new_block = rdw.to_model(r.id, ratio).to_tex()
-            new_content = content[:r.block_span[0]] + new_block + content[r.block_span[1]:]
+        if rdw.block:
+            block = parser.find_block_from_id(rdw.block.id)
+            if not block:
+                return # enters here if texfile has been modified, maybe raise some error instead
+            new_block = Block.tex(block.id, rdw.to_model(ratio).to_tex())
+            new_content = content[:block.start] + new_block + content[block.end:]
             self.tex_path.write_text(new_content)
         else:
-            id = model.find_new_rdw_id()
-            new_block = rdw.to_model(id, ratio).to_tex()
-            new_content = content[:model.end_frame_pos] + new_block + '\n\n' + content[model.end_frame_pos:]
+            id = parser.new_id(RDWModel)
+            new_block = Block.tex(id, rdw.to_model(ratio).to_tex())
+            new_content = content[:parser.end] + new_block + '\n\n' + content[parser.end:]
             self.tex_path.write_text(new_content)
-            model = PdfModel.parse(self.tex_path)
-            rdw.model = model.find_rdw_from_id(id)
+            parser = FrameParser(self.tex_path)
+            rdw.block = parser.find_block_from_id(id)
 
     def rm_rdw(self, rdw: ResizableDragableWidget):
-        model = PdfModel.parse(self.tex_path)
-        r = model.find_rdw_from_id(rdw.model.id)
+        parser = FrameParser(self.tex_path)
+        block = parser.find_block_from_id(rdw.block.id)
         content = self.tex_path.read_text()
-        new_content = content[:r.block_span[0]] + content[r.block_span[1]:]
+        new_content = content[:block.start] + content[block.end:]
         self.tex_path.write_text(new_content)

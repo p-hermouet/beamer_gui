@@ -15,7 +15,7 @@ from PySide6.QtPdf import QPdfDocument
 from PySide6.QtPdfWidgets import QPdfView
 from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog, QMenu, QStatusBar, QToolBar, QStackedLayout, QScrollArea, QSizePolicy, QFrame
 
-from src.pdf_model import RDWModel
+from src.models import Block, RDWModel
 
 logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 
@@ -176,7 +176,7 @@ class ResizableDragableWidget(QLabel):
         super().__init__(parent=area)
         self.area = area
         self.path = path
-        self.model: RDWModel|None= None
+        self.block: Block|None= None
 
         self.px = QPixmap(path)
         self.setPixmap(self.px.scaled(*size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
@@ -205,14 +205,15 @@ class ResizableDragableWidget(QLabel):
         self.show()
 
     @classmethod
-    def from_model(cls, area: DrawingArea, model: RDWModel, ratio: float):
+    def from_block(cls, area: DrawingArea, block: Block, ratio: float):
+        model = RDWModel.from_block(block)
         px = QPixmap(model.path)
         px_ratio = px.width() / px.height()
         # import ipdb; ipdb.set_trace()
         height = model.width / px_ratio
         rdw = cls(area, model.path, (model.width / ratio, height / ratio), ((model.pos[0] + 6) / ratio, (model.pos[1] + 6) / ratio))
         # TODO: ideally i should not require ratio to be explicitely computed. creating the pixmap in the constructor with a height of 1 and KeepAspectRatioByExpanding should creates the pixmap i want. However this cannot be the only way to create a RDW, as i also need it to fit into the rectangle (pdfview.width()/10, pdfview.height()/10), and for that i need both to input width and height and use KeepAspectRatio.
-        rdw.model = model
+        rdw.block = block
         rdw.hidding_mask = Mask(rdw)
         return rdw
 
@@ -227,8 +228,8 @@ class ResizableDragableWidget(QLabel):
             self.hidding_mask.deleteLater()
         return super().deleteLater()
 
-    def to_model(self, id:str, ratio: float):
-        return RDWModel(id, self.path, self.width() * ratio, (self.pos().x() * ratio, self.pos().y() * ratio))
+    def to_model(self, ratio: float):
+        return RDWModel(self.path, self.width() * ratio, (self.pos().x() * ratio, self.pos().y() * ratio))
 
     def adapt_components(self):
         for c in [self.corner_tl, self.corner_tr, self.corner_br, self.corner_bl]:

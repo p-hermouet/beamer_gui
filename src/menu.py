@@ -17,7 +17,7 @@ from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, Q
 
 from src.config import cfg
 from src.drawing_area import DrawingArea
-from src.pdf_model import PdfModel, RDWModel
+from src.models import FrameParser, RDWModel, Block
 from src.pdf_view import PdfView
 from src.resources import Resources
 from src.rdw import ResizableDragableWidget, Mask
@@ -65,9 +65,10 @@ class Menu(QToolBar):
         window.pdf_view.pdf_path = Path('tmp/main.pdf')
         window.pdf_view.display()
         window.draw_area.clear()
-        model = PdfModel.parse(window.tex_path)
+        parser = FrameParser(window.tex_path)
         ratio = window.pdf_view.doc_size[0] / window.pdf_view.view.size().width()
-        rdws = [ResizableDragableWidget.from_model(window.draw_area, m_rdw, ratio) for m_rdw in model.rdws]
+        rdws = [ResizableDragableWidget.from_block(self.draw_area, b, ratio)
+                    for b in parser.blocks if b.pid == RDWModel.pid]
         for rdw in rdws:
             rdw.hidding_mask.stackUnder(rdws[0])
             window.draw_area.add_rdw(rdw)

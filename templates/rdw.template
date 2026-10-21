@@ -1,5 +1,3 @@
-%% BEAMER_GUI BEGIN {id}
 \begin{{tikzpicture}}[remember picture, overlay]
   \node[anchor=north west] at ([xshift={x}, yshift=-{y}] current page.north west) {{\includegraphics[width={width}pt]{{{path}}}}};
 \end{{tikzpicture}}
-%% BEAMER_GUI END {id}
