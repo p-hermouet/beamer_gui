@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, Q
 from src.config import cfg
 from src.drawing_area import DrawingArea
 from src.menu import Menu
-from src.pdf_model import PdfModel, RDWModel
+from src.models import FrameParser, RDWModel
 from src.pdf_view import PdfView
 from src.resources import Resources
 from src.rdw import ResizableDragableWidget, Mask
@@ -83,6 +83,7 @@ class MainWindow(QMainWindow):
         self.pdf_view.compile_tex(self.tex_path)
         self.pdf_view.display()
         self.draw_area.clear()
+        
         model = PdfModel.parse(self.tex_path)
         ratio = self.pdf_view.doc_size[0] / self.pdf_view.view.size().width()
         rdws = [ResizableDragableWidget.from_model(self.draw_area, m_rdw, ratio) for m_rdw in model.rdws]

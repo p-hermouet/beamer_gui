@@ -3,7 +3,7 @@ from itertools import batched, count
 from pathlib import Path
 import re
 from re import Match
-from typing import Self
+from typing import Self, Generator
 
 
 # class RDWModel:
@@ -103,9 +103,9 @@ class Block:
     start_content: int
     end_content: int
     content: str
-    elem: str
     pid: str
     nid: int
+    children: list[Self]
 
     @property
     def id(self):
@@ -151,7 +151,7 @@ class EmptyStrucModel:
         ...
 
 
-class PdfParser:
+class FrameParser:
     begin_block_pattern = reg(r'%% BEAMER_GUI BEGIN (\w+)_(\d+)')
     end_block_pattern = reg('%% BEAMER_GUI END {id}')
 
@@ -161,25 +161,40 @@ class PdfParser:
         self.blocks: list[Block] = []
         self.parse()
 
-    def find_next_block(self, start: int):
-        m1 = re.search(self.begin_block_pattern, self.content[start:])
-        if len(m1.groups()) != 2:
-            ... # raise parsing error
-        pid, nid = m1
-        m2 = re.search(self.end_block_pattern.format(id=f'{pid}_{nid}'), self.content[start:])
-        if not m2:
-            ... # raise parsing error
-        block = Block(m1.start + start, m2.end + start, m1.end + start, m2.start + start, self.content[m1.start + start:m2.end + start])
-        match pid:
-            case RDWModel.pid:
-                return RDWModel.from_block(block)
-            case EmptyStrucModel.pid:
-                return EmptyStrucModel.from_block(block)
-            case _:
-                ... # raise parsing error
+    def walk_blocks(self, block: Block|None = None) -> Generator[Block]:
+        if not block:
+            for b in self.blocks:
+                yield b
+                yield from self.walk_blocks(b)
 
-    def parse(self):
-        ...
+    def find_next_block(self, start: int=0, end: int|None=None) -> Block|None:
+        m1 = re.search(self.begin_block_pattern, self.content[start:end])
+        if m1:
+            if len(m1.groups()) != 2:
+                ... # TODO: raise parsing error
+            pid, nid = m1
+            m2 = re.search(self.end_block_pattern.format(id=f'{pid}_{nid}'), self.content[start:])
+            if not m2:
+                ... # TODO: raise parsing error
+            return Block(m1.start + start,
+                        m2.end + start,
+                        m1.end + start,
+                        m2.start + start,
+                        self.content[m1.start + start:m2.end + start],
+                        pid,
+                        nid,
+                        [])
+
+    def parse(self, start: int=0, end: int|None=None):
+        blocks = []
+        while 'there are still blocks to parse':
+            b = self.find_next_block(start, end) # TODO: capture parsing error
+            if not b:
+                break
+            b.children = self.parse(b.start_content, b.end_content)
+            blocks.append(b)
+            start += b.end + 1
+        return blocks
 
     def find_block_from_id(self, id: str) -> Block:
         try:
