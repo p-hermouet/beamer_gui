@@ -46,6 +46,9 @@ class Model:
     template_path: str|Path
     pid: str
 
+    @classmethod
+    def from_block(cls, block: Block): ...
+
     def to_tex(self, **kwargs):
         content = Path(self.template_path).read_text()
         return content.format(**kwargs)
@@ -75,15 +78,64 @@ class RDWModel(Model):
         return super().to_tex(x=self.pos[0], y=self.pos[1], width=self.width, path=self.path)
 
 
-class EmptyStrucModel:
-    template_path = ...
-    pid = 'EMPTY_STRUC'
+@dataclass
+class TextStrucModel(Model):
+    template_path = Path('templates/text_struc.template')
+    pid = 'TEXT_STRUC'
 
-    children: ...
+    text: str
+
+    @classmethod
+    def from_block(cls, block: Block):
+        return cls(block.content)
+
+    def to_tex(self):
+        return super().to_tex(text=self.text)
+
+
+# TODO: code this class
+@dataclass
+class ImgStrucModel(Model):
+    template_path = Path('templates/img_struc.template')
+    pid = 'IMG_STRUC'
+
+    path: str|Path
+    width: float # i think it's necessary
 
     @classmethod
     def from_block(cls, block: Block):
         ...
+
+    def to_tex(self):
+        return super().to_tex(path=self.path, width=self.width) # TODO: write the template
+
+
+@dataclass
+class LayoutStrucModel(Model):
+    children: list[Self]
+
+    def get_children_from_block(cls, block):
+        children: list[Model] = []
+        for b in block.children:
+            match b.pid:
+                case TextStrucModel.pid: children.append(TextStrucModel.from_block(b))
+                case ImgStrucModel.pid: children.append(ImgStrucModel.from_block(b))
+                case _: ...# unexpected child block: raise error ?
+        return children
+
+
+# class VStrucModel(LayoutStrucModel):
+#     template_path = 'templates/v_struc.template'
+#     pid = 'V_STRUC'
+
+#     @classmethod
+#     def from_block(cls, block):
+#         return cls(super().get_children_from_block(block))
+
+#     def to_tex(self):
+#         return super().to_tex(children='\n\n\\vfill\n\n'.join(Block.))
+
+
 
 
 class FrameParser:
