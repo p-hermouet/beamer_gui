@@ -42,9 +42,12 @@ class Block:
         return Path(cls.template_path).read_text().format(id=id, content=content)
 
 
+@dataclass
 class Model:
-    template_path: str|Path
-    pid: str
+    template_path = Path()
+    pid = ''
+
+    nid: str
 
     @classmethod
     def from_block(cls, block: Block): ...
@@ -62,15 +65,17 @@ class RDWModel(Model):
     pos_pattern = reg(r'\[xshift=-?(?P<x>\F),yshift=-?(?P<y>\F)\]')
     width_path_pattern = reg(r'\[width=(?P<width>\F)\w+\]{(?P<path>[^}]+)}')
 
-    path: str|Path
+    path: Path
     width: float
     pos: tuple[float, float]
+    nid: str
 
     @classmethod
     def from_block(cls, block: Block):
         mxy = re.search(cls.pos_pattern, block.content)
         mpw = re.search(cls.width_path_pattern, block.content)
-        return cls(path=Path(mpw['path']),
+        return cls(nid=block.nid,
+                   path=Path(mpw['path']),
                     width=float(mpw['width']),
                     pos=(float(mxy['x']), float(mxy['y'])))
 
@@ -87,7 +92,7 @@ class TextStrucModel(Model):
 
     @classmethod
     def from_block(cls, block: Block):
-        return cls(block.content)
+        return cls(nid=block.nid, text=block.content)
 
     def to_tex(self):
         return super().to_tex(text=self.text)
@@ -99,7 +104,7 @@ class ImgStrucModel(Model):
     template_path = Path('templates/img_struc.template')
     pid = 'IMG_STRUC'
 
-    path: str|Path
+    path: Path
     width: float # i think it's necessary
 
     @classmethod
@@ -124,18 +129,27 @@ class LayoutStrucModel(Model):
         return children
 
 
-# class VStrucModel(LayoutStrucModel):
-#     template_path = 'templates/v_struc.template'
-#     pid = 'V_STRUC'
+class VStrucModel(LayoutStrucModel):
+    template_path = 'templates/v_struc.template'
+    pid = 'V_STRUC'
 
-#     @classmethod
-#     def from_block(cls, block):
-#         return cls(super().get_children_from_block(block))
-
-#     def to_tex(self):
-#         return super().to_tex(children='\n\n\\vfill\n\n'.join(Block.))
+    @classmethod
+    def from_block(cls, block):
+        return cls(super().get_children_from_block(block))
 
 
+class HStrucModel(LayoutStrucModel):
+    template_path = 'templates/h_struc.template'
+    pid = 'H_STRUC'
+
+    stretch_pattern = reg(r'\\begin{minipage}{(\F) *\\textwidth}')
+
+    stretches_ratio: list[float]
+
+    @classmethod
+    def from_block(cls, block):
+        stretches_ratio = [float(m.groups()[0]) for m in re.finditer(cls.stretch_pattern, block.content)]
+        return cls(super().get_children_from_block(block), stretches_ratio)
 
 
 class FrameParser:
@@ -194,3 +208,13 @@ class FrameParser:
 
     def new_id(self, elem: type[Model]) -> str:
         return next(f'{elem.pid}_{id}' for id in count(1) if f'{elem.pid}_{id}' not in [b.id for b in self.walk_blocks()])
+
+    # def texify(self, model: Model, id: str=''):
+    #     if not id:
+    #         id = self.new_id(type(model))
+    #     match model:
+    #         case RDWModel()|TextStrucModel()|ImgStrucModel():
+    #             content = model.to_tex()
+    #             return Block.tex(id, content)
+    #         case VStrucModel():
+    #             return '\n\n\\vfill\n\n'.join(self.texify())

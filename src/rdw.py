@@ -229,7 +229,8 @@ class ResizableDragableWidget(QLabel):
         return super().deleteLater()
 
     def to_model(self, ratio: float):
-        return RDWModel(self.path, self.width() * ratio, (self.pos().x() * ratio, self.pos().y() * ratio))
+        nid = self.block.nid if self.block else ''
+        return RDWModel(nid, self.path, self.width() * ratio, (self.pos().x() * ratio, self.pos().y() * ratio))
 
     def adapt_components(self):
         for c in [self.corner_tl, self.corner_tr, self.corner_br, self.corner_bl]:
