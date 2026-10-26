@@ -165,13 +165,12 @@ class FrameParser:
         self.blocks = self.parse()
 
     def walk_blocks(self, block: Block|None = None) -> Generator[Block]:
-        if not block:
-            for b in self.blocks:
-                yield b
-                yield from self.walk_blocks(b)
+        blocks = self.blocks if not block else block.children
+        for b in blocks:
+            yield b
+            yield from self.walk_blocks(b)
 
     def find_next_block(self, start: int=0, end: int|None=None) -> Block|None:
-        print(f'Find next block: parsing {start} {end}')
         m1 = re.search(self.begin_block_pattern, self.content[start:end])
         if m1:
             if len(m1.groups()) != 2:
@@ -190,16 +189,14 @@ class FrameParser:
                         [])
 
     def parse(self, start: int=0, end: int|None=None):
-        print(f'Parse: parsing {start} {end}')
         blocks = []
         while 'there are still blocks to parse':
             b = self.find_next_block(start, end) # TODO: capture parsing error
             if not b:
                 break
-            print('Found block'); print(b); print()
             b.children = self.parse(b.start_content, b.end_content)
             blocks.append(b)
-            start += b.end + 1
+            start = b.end
         return blocks
 
     def find_block_from_id(self, id: str) -> Block:
