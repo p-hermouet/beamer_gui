@@ -29,7 +29,7 @@ class Resources(QWidget):
         self.layout().addWidget(self.resource_list, stretch=80)
 
     def on_open_btn_clicked(self):
-        path, _ = QFileDialog.getOpenFileName(self, caption='Open resource file', filter='Image files (*.png *.jpg *.jpeg)')
+        path, _ = QFileDialog.getOpenFileName(self, caption='Open resource file', filter='Image files (*.png *.jpg *.jpeg, *.svg)')
         self.resource_list.add_resource(path)
 
 
