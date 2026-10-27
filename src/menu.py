@@ -62,12 +62,12 @@ class Menu(QToolBar):
 
     def load_pdf_triggered(self):
         window = self.parent()
-        window.pdf_view.pdf_path = Path('tmp/main.pdf')
+        window.pdf_view.pdf_path = Path('tmp/CLLZ2021Hidden.pdf')
         window.pdf_view.display()
         window.draw_area.clear()
         parser = FrameParser(window.tex_path)
         ratio = window.pdf_view.doc_size[0] / window.pdf_view.view.size().width()
-        rdws = [ResizableDragableWidget.from_block(self.draw_area, b, ratio)
+        rdws = [ResizableDragableWidget.from_block(window.draw_area, b, ratio)
                     for b in parser.blocks if b.pid == RDWModel.pid]
         for rdw in rdws:
             rdw.hidding_mask.stackUnder(rdws[0])

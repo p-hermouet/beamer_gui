@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 import subprocess
 
-from PySide6.QtCore import Qt, QMargins, Signal
+from PySide6.QtCore import Qt, QMargins, Signal, QPoint
 from PySide6.QtGui import QVector2D
 from PySide6.QtPdf import QPdfDocument
 from PySide6.QtPdfWidgets import QPdfView
@@ -57,3 +57,4 @@ class PdfView(QWidget):
     def display(self):
         self.doc.load(str(self.pdf_path))
         self.view.setDocument(self.doc)
+        self.view.pageNavigator().jump(self.doc.pageCount() - 1, QPoint(), self.view.zoomFactor())
