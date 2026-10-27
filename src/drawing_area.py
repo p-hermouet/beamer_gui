@@ -40,7 +40,7 @@ class DrawingArea(QWidget):
 
     def rm_rdw(self, rdw: ResizableDragableWidget):
         self.rdws.remove(rdw)
-        if rdw.model:
+        if rdw.block:
             self.remove_rdw.emit(rdw)
         rdw.remove()
 

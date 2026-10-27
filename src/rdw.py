@@ -209,7 +209,6 @@ class ResizableDragableWidget(QLabel):
         model = RDWModel.from_block(block)
         px = QPixmap(model.path)
         px_ratio = px.width() / px.height()
-        # import ipdb; ipdb.set_trace()
         height = model.width / px_ratio
         rdw = cls(area, model.path, (model.width / ratio, height / ratio), ((model.pos[0] + 6) / ratio, (model.pos[1] + 6) / ratio))
         # TODO: ideally i should not require ratio to be explicitely computed. creating the pixmap in the constructor with a height of 1 and KeepAspectRatioByExpanding should creates the pixmap i want. However this cannot be the only way to create a RDW, as i also need it to fit into the rectangle (pdfview.width()/10, pdfview.height()/10), and for that i need both to input width and height and use KeepAspectRatio.

@@ -80,7 +80,8 @@ class RDWModel(Model):
                     pos=(float(mxy['x']), float(mxy['y'])))
 
     def to_tex(self):
-        return super().to_tex(x=self.pos[0], y=self.pos[1], width=self.width, path=self.path)
+        include_cmd = r'\includesvg' if Path(self.path).suffix == '.svg' else r'\includegraphics'
+        return super().to_tex(x=self.pos[0], y=self.pos[1], include_cmd=include_cmd, width=self.width, path=self.path)
 
 
 @dataclass
