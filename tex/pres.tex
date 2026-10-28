@@ -1,0 +1,101 @@
+\documentclass[aspectratio=169, dvipsnames, 10pt]{beamer}
+
+\usepackage[export]{adjustbox}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{bm}
+\usepackage{bbm}
+\usepackage{braket}
+\usepackage{calc}
+\usepackage{cleveref}
+\usepackage{contour}
+\usepackage[adversary, sets, lambda, keys, operators, primitives, probability, asymptotics]{cryptocode}
+\usepackage{graphicx}
+\usepackage{dashrule}
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage{ifthen}
+\usepackage{libertine}
+\usepackage{makecell}
+\usepackage{mathtools}
+\usepackage{newunicodechar}
+\usepackage{printlen}\uselengthunit{cm}
+\usepackage{svg}
+\usepackage[most]{tcolorbox}
+\usepackage{tikz}
+\usepackage[normalem,normalbf]{ulem}
+\usepackage{varwidth}
+\usepackage{xcolor}
+\usepackage{xspace}
+
+\usetikzlibrary{
+  arrows.meta,
+  matrix,
+  decorations.pathreplacing,
+  decorations.pathmorphing,
+  calc,
+  fit,
+  backgrounds,
+  positioning,
+  overlay-beamer-styles,
+  shapes,
+  tikzmark,
+  quantikz2
+}
+
+\title{Regev Reduction With Lattices}
+\date{}
+\author{Paul Hermouet}
+
+
+\setbeamertemplate{itemize item}[circle]
+\input{commands/color_perso.tex}
+% \input{themes/octopus_garden.tex}
+\input{themes/inria.tex}
+\setbeamertemplate{caption}{\raggedright\insertcaption\par}
+\setbeamerfont{frametitle}{family=\scshape}
+\setbeamerfont{title}{family=\scshape,size=\LARGE}
+
+\input{_commands.tex}
+\input{commands/commands.tex}
+\input{commands/color_perso.tex}
+\input{commands/tcolorbox.tex}
+\input{commands/square.tex}
+\input{commands/beamer.tex}
+\input{commands/crypto_commands.tex}
+\input{commands/math_commands.tex}
+\input{commands/quantum_commands.tex}
+\input{commands/unclonable_commands.tex}
+\input{commands/tikz_commands.tex}
+\input{commands_paper.tex}
+
+\begin{document}
+
+\begin{frame}
+  \frametitle{Regev Reduction in a Nutshell}
+
+  Goal: Given an $\LWE$ solver for $\latt$, solve $\SIS$, \ie{} find a short vector in $\latt^*$.
+  \pause\vfill
+
+  \begin{minipage}{.45\textwidth}
+    \begin{enumerate}
+      \item Using the $\LWE$ solver, prepare
+      $$
+        \sum_{\xv \in \latt} \sum_{\ev \in \ZZ_q^m} f(\ev) \ket{\xv + \ev}.
+      $$
+      \item<3-> Apply a $\QFT$:
+      $$
+        \sum_{\yv \in \latt^*} \hf(\yv) \ket{\yv}.
+      $$
+      {\small where $\hf = \FT(f)$.}
+      \item<5-> Measure and obtain $\yv$ w.p. $|\hf(\yv)|^2$.
+    \end{enumerate}
+  \end{minipage}
+  % TODO: add figures + gaussians: tikz/slwe_for_red.tex tikz/clwe_intro.tex images/primal_gaussian.png images/gaussians.png
+\end{frame}
+
+
+\end{document}

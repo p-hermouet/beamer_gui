@@ -1,0 +1,22 @@
+\begin{frame}
+  \frametitle{Regev Reduction in a Nutshell}
+
+  Goal: Given an $\LWE$ solver for $\latt$, solve $\SIS$, \ie{} find a short vector in $\latt^*$.
+  \pause\vfill
+
+  \begin{minipage}{.45\textwidth}
+    \begin{enumerate}
+      \item Using the $\LWE$ solver, prepare
+      $$
+        \sum_{\xv \in \latt} \sum_{\ev \in \ZZ_q^m} f(\ev) \ket{\xv + \ev}.
+      $$
+      \item<3-> Apply a $\QFT$:
+      $$
+        \sum_{\yv \in \latt^*} \hf(\yv) \ket{\yv}.
+      $$
+      {\small where $\hf = \FT(f)$.}
+      \item<5-> Measure and obtain $\yv$ w.p. $|\hf(\yv)|^2$.
+    \end{enumerate}
+  \end{minipage}
+  % TODO: add figures + gaussians: tikz/slwe_for_red.tex tikz/clwe_intro.tex images/primal_gaussian.png images/gaussians.png
+\end{frame}
