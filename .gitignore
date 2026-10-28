@@ -217,5 +217,12 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Misc
+# Latex
 svg-inkscape/
+*.aux
+*.nav
+*.toc
+*.snm
+*.log
+*.out
+tmp/
