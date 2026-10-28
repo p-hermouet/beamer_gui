@@ -8,7 +8,7 @@ from PySide6.QtPdf import QPdfDocument
 from PySide6.QtPdfWidgets import QPdfView
 from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFileDialog
 
-from src.config import cfg
+from src.config import cfg, TMP_PATH, TEMPLATES_PATH, LOCAL_TEX
 
 logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 
@@ -42,14 +42,19 @@ class PdfView(QWidget):
         ratio = w / h
         return (h * self.doc_ratio, h) if self.doc_ratio <= ratio else (w, w / self.doc_ratio)
 
-
     def compile_tex(self, path: str|Path):
         if Path(path).is_file():
-            proc = subprocess.Popen(['pdflatex', '-shell-escape', '-output-dir=tmp', str(path)]) # TODO: replace with a QProcess or something Qt
+            main_path = TMP_PATH / 'main.tex'
+            tmpl = TEMPLATES_PATH / 'main.template'
+            main_path.write_text(tmpl.read_text().format(
+                preamble=(LOCAL_TEX / 'preamble.tex').absolute(),
+                texfile=Path(path).absolute()))
+
+            proc = subprocess.Popen(['pdflatex', '-shell-escape', f'-output-dir={TMP_PATH}', main_path]) # TODO: replace with a QProcess or something Qt
             proc.wait()
-            proc = subprocess.Popen(['pdflatex', '-shell-escape', '-output-dir=tmp', str(path)]) # TODO: replace with a QProcess or something Qt
+            proc = subprocess.Popen(['pdflatex', '-shell-escape', f'-output-dir={TMP_PATH}', main_path]) # TODO: replace with a QProcess or something Qt
             proc.wait()
-            self.pdf_path = Path('tmp')/ Path(path).with_suffix('.pdf').name
+            self.pdf_path = TMP_PATH / 'main.pdf'
             logging.info(f'pdflatex returned {proc.returncode}')
         else:
             ... # TODO raise error

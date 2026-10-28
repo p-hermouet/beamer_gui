@@ -2,7 +2,14 @@ from pathlib import Path
 import tomllib
 
 
-CONFIG_PATH = Path('config.toml')
+APP_PATH = Path(__file__).parent.parent
+TMP_PATH = APP_PATH / 'tmp'
+TEMPLATES_PATH = APP_PATH / 'templates'
+CONFIG_PATH = APP_PATH / 'config.toml'
+
+LOCAL_PATH = Path('.beamer_gui')
+LOCAL_CFG = LOCAL_PATH / 'config.toml'
+LOCAL_TEX = LOCAL_PATH / 'tex'
 
 
 class Config:

@@ -1,0 +1,24 @@
+\documentclass[aspectratio=169, dvipsnames, 10pt]{{beamer}}
+\usepackage{{tikz}}
+\usepackage{{svg}}
+
+\usetikzlibrary{{
+  arrows.meta,
+  matrix,
+  decorations.pathreplacing,
+  decorations.pathmorphing,
+  calc,
+  fit,
+  backgrounds,
+  positioning,
+  overlay-beamer-styles,
+  shapes,
+  tikzmark,
+  quantikz2
+}}
+
+\input{{{preamble}}}
+
+\begin{{document}}
+    \input{{{texfile}}}
+\end{{document}}

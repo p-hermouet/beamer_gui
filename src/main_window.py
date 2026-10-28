@@ -77,7 +77,7 @@ class MainWindow(QMainWindow):
             self.menu.compile_action.setText(f'Compile {Path(path).parts[-1]}')
 
     def set_tex_path(self, path: str|Path):
-        self.tex_path = path
+        self.tex_path = Path(path)
 
     def compile_and_display(self):
         self.pdf_view.compile_tex(self.tex_path)

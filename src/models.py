@@ -7,6 +7,8 @@ import re
 from re import Match
 from typing import Self, Generator
 
+from src.config import TEMPLATES_PATH
+
 
 def reg(expr: str):
     ''' Modifies a regex expression so that it captures any space around symbols `()[]{}=,-`, and defines `\\F` as a pattern for `int or float`.
@@ -22,7 +24,7 @@ def reg(expr: str):
 
 @dataclass
 class Block:
-    template_path = Path('templates/block.template')
+    template_path = TEMPLATES_PATH / 'block.template'
 
     start: int
     end: int
@@ -59,7 +61,7 @@ class Model:
 
 @dataclass
 class RDWModel(Model):
-    template_path = Path('templates/rdw.template')
+    template_path = TEMPLATES_PATH / 'rdw.template'
     pid = 'RDW'
 
     pos_pattern = reg(r'\[xshift=-?(?P<x>\F),yshift=-?(?P<y>\F)\]')
@@ -86,7 +88,7 @@ class RDWModel(Model):
 
 @dataclass
 class TextStrucModel(Model):
-    template_path = Path('templates/text_struc.template')
+    template_path = TEMPLATES_PATH / 'text_struc.template'
     pid = 'TEXT_STRUC'
 
     text: str
@@ -102,7 +104,7 @@ class TextStrucModel(Model):
 # TODO: code this class
 @dataclass
 class ImgStrucModel(Model):
-    template_path = Path('templates/img_struc.template')
+    template_path = TEMPLATES_PATH / 'img_struc.template'
     pid = 'IMG_STRUC'
 
     path: Path
@@ -131,7 +133,7 @@ class LayoutStrucModel(Model):
 
 
 class VStrucModel(LayoutStrucModel):
-    template_path = 'templates/v_struc.template'
+    template_path = TEMPLATES_PATH / 'v_struc.template'
     pid = 'V_STRUC'
 
     @classmethod
@@ -140,7 +142,7 @@ class VStrucModel(LayoutStrucModel):
 
 
 class HStrucModel(LayoutStrucModel):
-    template_path = 'templates/h_struc.template'
+    template_path = TEMPLATES_PATH / 'h_struc.template'
     pid = 'H_STRUC'
 
     stretch_pattern = reg(r'\\begin{minipage}{(\F) *\\textwidth}')
