@@ -226,3 +226,6 @@ svg-inkscape/
 *.log
 *.out
 tmp/
+
+# Misc
+log
