@@ -23,6 +23,7 @@ logging.basicConfig(level=logging.DEBUG, filename='log', filemode='w')
 class DrawingArea(QWidget):
     rdw_modified = Signal(QLabel)
     remove_rdw = Signal(QLabel)
+    selected = Signal(QLabel)
 
     def __init__(self):
         super().__init__()
@@ -36,6 +37,7 @@ class DrawingArea(QWidget):
         rdw.moving.connect(self.move_shadow)
         rdw.moving_done.connect(self.move_rdw)
         rdw.remove_rdw.connect(self.rm_rdw)
+        rdw.selected.connect(lambda w: self.selected.emit(w))
         self.rdws.append(rdw)
 
     def rm_rdw(self, rdw: ResizableDragableWidget):

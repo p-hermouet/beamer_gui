@@ -77,6 +77,7 @@ class Corner(QFrame):
 
 
 class Inside(QFrame):
+    clicked = Signal()
     moving = Signal(QVector2D)
     moving_done = Signal()
 
@@ -111,6 +112,7 @@ class Inside(QFrame):
             event.accept()
 
     def mousePressEvent(self, event):
+        self.clicked.emit()
         if event.button() == Qt.MouseButton.LeftButton and self.area.state == 'hovering_inside':
             self.area.state = 'moving'
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
@@ -165,11 +167,12 @@ class Mask(QFrame):
 
 
 class ResizableDragableWidget(QLabel):
-    resizing = Signal(QLabel, Corner, QVector2D)
-    resizing_done = Signal(QLabel)
     moving = Signal(QLabel, QVector2D)
     moving_done = Signal(QLabel)
     remove_rdw = Signal(QLabel)
+    resizing = Signal(QLabel, Corner, QVector2D)
+    resizing_done = Signal(QLabel)
+    selected = Signal(QLabel)
 
     def __init__(self, area: DrawingArea, path: str|Path, size: tuple[int, int], pos: tuple[int, int]):
         # TODO: ideally, i should not need to know that area is a DrawingArea. All use of self.area.<...> should be replaced by signals sent to the DrawingArea instance.
@@ -201,6 +204,7 @@ class ResizableDragableWidget(QLabel):
             c.resizing_done.connect(lambda: self.resizing_done.emit(self))
         self.inside.moving.connect(lambda shift: self.moving.emit(self, shift))
         self.inside.moving_done.connect(lambda: self.moving_done.emit(self))
+        self.inside.clicked.connect(lambda: self.selected.emit(self))
 
         self.show()
 

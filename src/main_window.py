@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, Q
 
 from src.config import cfg
 from src.drawing_area import DrawingArea
+from src.info_panel import InfoPanel
 from src.menu import Menu
 from src.models import Block, FrameParser, RDWModel
 from src.pdf_view import PdfView
@@ -39,6 +40,7 @@ class MainWindow(QMainWindow):
         self.draw_area = DrawingArea()
         self.pdf_view = PdfView()
         self.struc = MainStruc()
+        self.info_panel = InfoPanel()
 
         self.menu.tex_opened.connect(self.set_tex_path)
         self.menu.compile_action.triggered.connect(self.compile_and_display)
@@ -46,6 +48,7 @@ class MainWindow(QMainWindow):
         self.resources.resource_list.content.double_clicked.connect(self.add_resource_to_pdf)
         self.draw_area.rdw_modified.connect(self.add_image_to_tex)
         self.draw_area.remove_rdw.connect(self.rm_rdw)
+        self.draw_area.selected.connect(lambda w: self.info_panel.set_focused_wid(w))
 
         if Path(cfg['last_tex']).is_file():
             self.tex_path = Path(cfg['last_tex'])
@@ -57,6 +60,7 @@ class MainWindow(QMainWindow):
         container.setLayout(QHBoxLayout())
         container.layout().addWidget(self.resources, stretch=1)
         container.layout().addWidget(self.stack, stretch=4)
+        container.layout().addWidget(self.info_panel, stretch=1)
         stack_layout = QStackedLayout(self.stack)
         self.pdf_stack.setLayout(QStackedLayout())
         self.pdf_stack.layout().setStackingMode(QStackedLayout.StackingMode.StackAll)
