@@ -167,6 +167,7 @@ class Mask(QFrame):
 
 
 class ResizableDragableWidget(QLabel):
+    geometry_changed = Signal(QLabel)
     moving = Signal(QLabel, QVector2D)
     moving_done = Signal(QLabel)
     remove_rdw = Signal(QLabel)
@@ -259,11 +260,12 @@ class ResizableDragableWidget(QLabel):
         self.context_menu.popup(QCursor.pos())
 
     def resizeEvent(self, event):
-        # TODO: it never gets called, figure out why; i currently circumvent it by calling directly self.adapt_components when needed
         self.adapt_components()
+        self.geometry_changed.emit(self)
 
     def moveEvent(self, event):
         self.adapt_components()
+        self.geometry_changed.emit(self)
 
     def paintEvent(self, event):
         super().paintEvent(event)

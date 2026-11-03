@@ -24,6 +24,7 @@ class DrawingArea(QWidget):
     rdw_modified = Signal(QLabel)
     remove_rdw = Signal(QLabel)
     selected = Signal(QLabel)
+    selected_geom_changed = Signal(QLabel)
 
     def __init__(self):
         super().__init__()
@@ -38,6 +39,7 @@ class DrawingArea(QWidget):
         rdw.moving_done.connect(self.move_rdw)
         rdw.remove_rdw.connect(self.rm_rdw)
         rdw.selected.connect(lambda w: self.selected.emit(w))
+        rdw.geometry_changed.connect(lambda w: self.selected_geom_changed.emit(w))
         self.rdws.append(rdw)
 
     def rm_rdw(self, rdw: ResizableDragableWidget):

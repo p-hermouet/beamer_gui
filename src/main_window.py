@@ -49,6 +49,7 @@ class MainWindow(QMainWindow):
         self.draw_area.rdw_modified.connect(self.add_image_to_tex)
         self.draw_area.remove_rdw.connect(self.rm_rdw)
         self.draw_area.selected.connect(lambda w: self.info_panel.set_focused_wid(w))
+        self.draw_area.selected_geom_changed.connect(lambda w: self.info_panel.update_focused_wid(w))
 
         if Path(cfg['last_tex']).is_file():
             self.tex_path = Path(cfg['last_tex'])

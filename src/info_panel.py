@@ -35,5 +35,9 @@ class InfoPanel(QWidget):
         self.focused_wid = wid
         match wid:
             case ResizableDragableWidget():
-                self.layout().addWidget(QLabel(f'width: {wid.width()}'))
-                self.layout().addWidget(QLabel(f'height: {wid.height()}'))
+                self.layout().addWidget(QLabel(f'width: {wid.width()}', objectName='width'))
+                self.layout().addWidget(QLabel(f'height: {wid.height()}', objectName='height'))
+
+    def update_focused_wid(self, wid: QWidget):
+        self.findChild(QLabel, 'width').setText(f'width: {wid.width()}')
+        self.findChild(QLabel, 'height').setText(f'width: {wid.height()}')
