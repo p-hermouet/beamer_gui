@@ -180,6 +180,7 @@ class ResizableDragableWidget(QLabel):
         super().__init__(parent=area)
         self.area = area
         self.path = path
+        self.lay_specs: list[int] = []
         self.block: Block|None= None
 
         self.px = QPixmap(path)
