@@ -66,6 +66,7 @@ class RDWModel(Model):
 
     pos_pattern = reg(r'\[xshift=-?(?P<x>\F),yshift=-?(?P<y>\F)\]')
     width_path_pattern = reg(r'\[width=(?P<width>\F)\w+\]{(?P<path>[^}]+)}')
+    overlay_spec_pattern = reg(r'visible on=<(?P<overlay_spec>.*?)>')
 
     path: Path
     width: float
